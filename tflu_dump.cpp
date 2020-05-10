@@ -30,6 +30,8 @@ namespace tflite {
 			DECLARE_FUNC_SET(conv)
 			DECLARE_FUNC_SET(depthwise_conv)
 			DECLARE_FUNC_SET(reshape)
+			DECLARE_FUNC_SET(quantize)
+			DECLARE_FUNC_SET(dequantize)
 			DECLARE_PREP_EVAL(activations, Softmax)
 			DECLARE_EVAL(pooling, Average)
 			DECLARE_EVAL(pooling, Max)
@@ -50,6 +52,13 @@ static std::string to_string(TfLiteType t){
 	NAME(kTfLiteFloat32);
 	NAME(kTfLiteInt32);
 	NAME(kTfLiteUInt8);
+	NAME(kTfLiteInt64);
+	NAME(kTfLiteString);
+	NAME(kTfLiteBool);
+	NAME(kTfLiteInt16);
+	NAME(kTfLiteComplex64);
+	NAME(kTfLiteInt8);
+	NAME(kTfLiteFloat16);
 	NAME(kTfLiteFloat64);
 	default: return "TfLiteType(" + std::to_string((int)t) + ")";
 	}
@@ -183,6 +192,8 @@ static std::string function_name(void const*ptr) {
 	FUNC_SET(fully_connected);
 	FUNC_SET(conv);
 	FUNC_SET(depthwise_conv);
+	FUNC_SET(dequantize);
+	FUNC_SET(quantize);
 	FUNC_SET2(reshape);
 	FUNC_SET2P(activations, Softmax);
 	FUNCNAME(tflite::ops::micro::pooling::MaxEval);
@@ -201,7 +212,7 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::set<std::string> known;
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->init) {
-			std::string name = function_name(interpreter->node_and_registration(i).registration->init);
+			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->init));
 			if (known.find(name)==known.end() && name.substr(0,20)=="tflite::ops::micro::") {
 				std::string::size_type sep = name.find("::", 20);
 				if (sep != std::string::npos) {
@@ -209,11 +220,12 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 					std::string fun = name.substr(sep + 2);
 					std::cout << "namespace " << nmspc << " { extern void* " << fun
 						<< "(TfLiteContext*, const char*, size_t); }" << std::endl;
+					known.insert(name);
 				}
 			}
 		}
 		if (interpreter->node_and_registration(i).registration->prepare) {
-			std::string name = function_name(interpreter->node_and_registration(i).registration->prepare);
+			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->prepare));
 			if (known.find(name) == known.end() && name.substr(0, 20) == "tflite::ops::micro::") {
 				std::string::size_type sep = name.find("::", 20);
 				if (sep != std::string::npos) {
@@ -221,11 +233,12 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 					std::string fun = name.substr(sep + 2);
 					std::cout << "namespace " << nmspc << " { extern TfLiteStatus " << fun
 						<< "(TfLiteContext*, TfLiteNode*); }" << std::endl;
+					known.insert(name);
 				}
 			}
 		}
 		if (interpreter->node_and_registration(i).registration->invoke) {
-			std::string name = function_name(interpreter->node_and_registration(i).registration->invoke);
+			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
 			if (known.find(name) == known.end() && name.substr(0, 20) == "tflite::ops::micro::") {
 				std::string::size_type sep = name.find("::", 20);
 				if (sep != std::string::npos) {
@@ -233,6 +246,7 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 					std::string fun = name.substr(sep + 2);
 					std::cout << "namespace " << nmspc << " { extern TfLiteStatus " << fun
 						<< "(TfLiteContext*, TfLiteNode*); }" << std::endl;
+					known.insert(name);
 				}
 			}
 		}
@@ -298,7 +312,7 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->init) {
 			std::cout << "  " << prefix << "nodes[" << i << "].user_data = "
-				<< function_name(interpreter->node_and_registration(i).registration->init)
+				<< function_name((const void*)(interpreter->node_and_registration(i).registration->init))
 				// TODO: Handle custom operators
 				<< "(&" << prefix << "context, (const char*)(" << prefix << "nodes[" << i << "].builtin_data), 0);" << std::endl;
 		}
@@ -306,7 +320,7 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->prepare) {
 			std::cout << "  " 
-				<< function_name(interpreter->node_and_registration(i).registration->prepare)
+				<< function_name((const void*)(interpreter->node_and_registration(i).registration->prepare))
 				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
 		}
 	}
@@ -321,9 +335,13 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << std::endl;
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
+		std::string funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
 		std::cout << "  "
-			<< function_name(interpreter->node_and_registration(i).registration->invoke)
+			<< funname
 			<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
+		if (funname=="unknown_function") {
+			std::cerr << "unknown function for code " << int(interpreter->node_and_registration(i).registration->builtin_code) << std::endl;
+		}
 	}
 	std::cout << "}" << std::endl;
 }
