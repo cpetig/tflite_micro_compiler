@@ -70,20 +70,7 @@ void run()
     std::cerr << "result " << model_output->data.f[0] << std::endl;
 }
 
-extern void hello_init(uint8_t const*tflite_array, uint8_t const*tensor_arena);
-extern void hello_invoke(void const* (inputs[1]), void * (outputs[1]));
-
-void test_compiled(void) {
-	float in = 1.57f, out = 0.0f;
-	void const* in_array[1]= {&in};
-	void* out_array[1]= {&out};
-	hello_init(g_model, tensor_arena);
-	hello_invoke(in_array, out_array);
-	std::cerr << "compiled result " << out << std::endl;
-}
-
 int main(int argc, char** argv) {
-	test_compiled();
 	init();
 	run();
 	return 0;
