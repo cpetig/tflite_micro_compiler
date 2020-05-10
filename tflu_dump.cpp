@@ -1,3 +1,17 @@
+/* Copyright 2020 Christof Petig. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
 
 #include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -265,13 +279,6 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 				std::string(prefix) + "opdata" + std::to_string(i));
 		}
 	}
-#if 0	
-	std::cout << "static const TfLiteTensor *const " << prefix << "tensor_array[" << interpreter->tensors_size() << "] = { ";
-	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
-		std::cout << prefix << "tensors + " << i << ", ";
-	}
-	std::cout << "};" << std::endl;
-#endif
 	// quantization parameters
 	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
 		TfLiteTensor const* t = interpreter->tensor(i);
