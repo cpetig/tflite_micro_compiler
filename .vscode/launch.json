@@ -8,7 +8,7 @@
             "name": "(gdb) example Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/mobilnet",
+            "program": "${workspaceFolder}/hello_world",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

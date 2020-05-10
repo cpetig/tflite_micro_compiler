@@ -1,5 +1,5 @@
 TF_DIR=../tensorflow
-CXXFLAGS= -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON \
+CXXFLAGS=-g -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON \
 	-I${TF_DIR} -I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ \
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/gemmlowp \
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
@@ -9,6 +9,9 @@ LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 	-ltensorflow-microlite
 
 all: hello_world mobilnet
+
+clean:
+	rm *.o hello_world mobilnet
 
 mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o tflu_dump.o compiled_mobilnet.o
 	$(CXX) -o $@ $^ ${LIBS}
