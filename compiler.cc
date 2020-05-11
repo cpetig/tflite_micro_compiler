@@ -10,11 +10,11 @@
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
-static const int tensor_arena_size = 6 * 1024;
-static uint8_t tensor_arena[tensor_arena_size];
-
-extern const unsigned char g_model[];
-//extern const int g_model_len;
+static int tensor_arena_size = 6 * 1024;
+static uint8_t* tensor_arena=nullptr;
+static uint8_t* g_model=nullptr;
+static int g_model_len=0;
+static char const *prefix="model_";
 
 // Set up logging.
 static tflite::ErrorReporter *error_reporter = nullptr;
@@ -22,6 +22,10 @@ static tflite::ErrorReporter *error_reporter = nullptr;
 static tflite::ops::micro::AllOpsResolver *resolver = nullptr;
 static const tflite::Model* model = nullptr;
 static tflite::MicroInterpreter *interpreter = nullptr;
+
+extern void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
+	uint8_t const*tflite_array, uint8_t const* tflite_end,
+	uint8_t const*tensor_arena, uint8_t const* arena_end);
 
 void init(void)
 {
@@ -49,23 +53,32 @@ void init(void)
 		TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
 		return;
 	}
-}
 
-void run()
-{
-	TfLiteTensor* model_input = interpreter->input(0);
-    model_input->data.f[0] = 1.57f; // roughly PI/2
-
-	TfLiteStatus invoke_status = interpreter->Invoke();
-	if (invoke_status != kTfLiteOk) {
-		TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
-	}
-	TfLiteTensor* model_output = interpreter->output(0);
-    std::cerr << "result " << model_output->data.f[0] << std::endl;
+	dump_data(prefix, interpreter, g_model, g_model + g_model_len, tensor_arena, tensor_arena + tensor_arena_size);
 }
 
 int main(int argc, char** argv) {
+	if (argc<2 || argc>4) {
+		std::cerr << "USAGE: " << argv[0] << " input.tflite arena_size prefix >output.cpp" << std::endl;
+		return 1;
+	}
+	if (argc>=3) tensor_arena_size= atoi(argv[2]);
+	if (argc>=4) prefix=argv[3];
+	FILE *f = fopen(argv[1], "rb");
+	if (!f) {
+		perror(argv[1]);
+		return 2;
+	}
+	fseek(f, 0L, SEEK_END); 
+    g_model_len = ftell(f); 
+	fseek(f, 0L, SEEK_SET);
+	g_model= (uint8_t*) malloc(g_model_len);
+	if (!g_model) { std::cerr << "allocation failed" << std::endl; fclose(f); return 3; }
+	fread(g_model, 1, g_model_len, f);
+	fclose(f);
+	tensor_arena= (uint8_t *)malloc(tensor_arena_size);
 	init();
-	run();
+	free(tensor_arena);
+	free(g_model);
 	return 0;
 }

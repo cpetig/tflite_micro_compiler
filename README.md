@@ -7,7 +7,7 @@ file, eliminating the need for running the interpreter at each program start and
 kernel at run time.
 
 Limitations:
-- very limited set of supported operators (due to low number of entries in code generator), typically two to fifteen lines are needed to support a new operator 
+- limited set of supported operators (due to low number of entries in code generator), typically two to fifteen lines are needed to support a new operator 
 
 Building the code:
 - check out tensorflow master next to this project (in ../tensorflow)
@@ -15,6 +15,15 @@ Building the code:
     - cd ../tensorflow
     - make -f tensorflow/lite/micro/tools/make/Makefile hello_world_bin
     [optionally add BUILD_TARGET=debug]
-- now run make in this project and regerenerate the compileable code by running
-    - ./mobilnet >compiled_mobilnet.cpp
-    - ./hello_world >compiled_hello.cpp
+- now run  make  in this project
+
+USAGE:
+- the !NEW! compiler is invoked as:
+    - ./compiler input.tflite arena_size prefix >output.cpp
+        e.g. ./compiler hello_world.tflite 3000 hello >hello_compiled.cpp
+- there is also a test and example:
+    - ./hello_world : execute using standard tflite micro interpreter
+    - ./hello_world_compiled : execute using the dumped and compiled in data structure
+
+- regerenerate the compileable code by running
+    - make regenerate

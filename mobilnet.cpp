@@ -14,7 +14,7 @@ static const int tensor_arena_size = 10 * 1024 * 1024;
 static uint8_t tensor_arena[tensor_arena_size];
 
 extern "C" const unsigned char __1_tflite[];
-extern "C" const unsigned int __1_tflite_len;
+//extern "C" const unsigned int __1_tflite_len;
 
 // Set up logging.
 static tflite::ErrorReporter *error_reporter = nullptr;
@@ -22,10 +22,6 @@ static tflite::ErrorReporter *error_reporter = nullptr;
 static tflite::ops::micro::AllOpsResolver *resolver = nullptr;
 static const tflite::Model* model = nullptr;
 static tflite::MicroInterpreter *interpreter = nullptr;
-
-extern void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
-	uint8_t const*tflite_array, uint8_t const* tflite_end,
-	uint8_t const*tensor_arena, uint8_t const* arena_end);
 
 void init(void)
 {
@@ -53,8 +49,6 @@ void init(void)
 		TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
 		return;
 	}
-
-	dump_data("mobilnet_", interpreter, __1_tflite, __1_tflite + __1_tflite_len, tensor_arena, tensor_arena + tensor_arena_size);
 }
 
 // strictly this is no longer necessary at all
@@ -84,6 +78,3 @@ int main(int argc, char** argv) {
 	exit();
 	return 0;
 }
-
-uint64_t GetTicks(void) { return 0; }
-TfLiteStatus FullyConnectedEval(TfLiteContext* context, TfLiteNode* node) { return TfLiteStatus(); }

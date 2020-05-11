@@ -8,10 +8,13 @@ CXXFLAGS=-g -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X8
 LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 	-ltensorflow-microlite
 
-all: hello_world mobilnet hello_world_compiled
+all: hello_world mobilnet hello_world_compiled compiler
 
 clean:
-	rm *.o hello_world mobilnet hello_world_compiled
+	rm *.o hello_world mobilnet hello_world_compiled compiler
+
+compiler: compiler.o tflu_dump.o
+	$(CXX) -o $@ $^ ${LIBS}
 
 mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o tflu_dump.o
 	$(CXX) -o $@ $^ ${LIBS}
@@ -25,6 +28,6 @@ hello_world_compiled: hello_world2.o hello_world_model.o compiled_hello.o
 hello_world_model.o: ${TF_DIR}/tensorflow/lite/micro/examples/hello_world/model.cc
 	$(CXX) -o $@ -c $^ $(CXXFLAGS)
 
-regenerate: hello_world mobilnet
-	./hello_world >compiled_hello.cpp
-	./mobilnet >compiled_mobilnet.cpp
+regenerate: compiler
+	./compiler hello_world.tflite 3000 hello_ >compiled_hello.cpp
+	./compiler mobilnet.tflite 10485760 mobilnet_ >compiled_mobilnet.cpp
