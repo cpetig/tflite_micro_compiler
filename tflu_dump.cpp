@@ -53,7 +53,7 @@ namespace tflite {
 	}
 }
 
-static std::string stage0;
+//static std::string stage0;
 
 static bool mem_in(void const*ptr, void const* start, void const* end){
 	return ptr >= start && ptr < end;
@@ -107,7 +107,7 @@ static std::string to_string(bool t){
 	switch (t) {
 	NAME(false);
 	NAME(true);
-	default: return "bool(" + std::to_string((int)t) + ")";
+//	default: return "bool(" + std::to_string((int)t) + ")";
 	}
 }
 static std::string to_string(TfLitePadding t){
@@ -126,8 +126,41 @@ static std::string to_string(TfLitePaddingValues const& v){
 		+ std::to_string(v.height_offset) + " }";
 }
 
+// implementation from https://github.com/tum-ei-eda/tflm-offline-interpreter/blob/master/src/main.cpp
+// Tracks the last allocation size.
+class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
+ public:
+  void *Allocate(size_t size, size_t alignment_hint) override {
+    lastAllocSize = size;
+    return malloc(size);
+  }
+  void Deallocate(void *data) override { free(data); }
+  size_t GetLastAllocSize() { return lastAllocSize; }
+
+ private:
+  size_t lastAllocSize = 0;
+};
+size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
+                          const tflite::SubGraph *subgraph) {
+#if 1
+  // There seems to be no simple query function for this, so tickle the
+  // information out of the parse function.
+  auto dummyOp = subgraph->operators()->Get(0);
+  tflite::MicroErrorReporter errReporter;
+  AllocatorToGetLastAllocSize allocator;
+  void *outData = nullptr;
+  if (tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator, &outData)==kTfLiteOk)
+	  free(outData);
+  return allocator.GetLastAllocSize();
+#else
+	return 8;
+#endif
+}
+// end of inserted implementation
+
 // we need to autogenerate this!
-static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::string const& name) {
+static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::string const& name,
+				const tflite::SubGraph *subgraph) {
 	std::cout << "static const ";
 	switch (op) {
 	case tflite::BuiltinOperator_CONV_2D: {
@@ -177,29 +210,35 @@ static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::stri
 			<< to_string(p->computed.padding) << " } };";
 	}
 	break;
-	case tflite::BuiltinOperator_RESHAPE: {
-		std::cout << "uint8_t " << name << " = { 0 }; /* is there reshape data? */";
-	}
-	break;
+	// case tflite::BuiltinOperator_RESHAPE: {
+	//  	std::cout << "uint8_t " << name << " = 0; /* is there reshape data? */";
+	// }
+	// break;
 	case tflite::BuiltinOperator_SOFTMAX: {
 		std::cout << "TfLiteSoftmaxParams " << name << " = { ";
 		TfLiteSoftmaxParams const*p = (TfLiteSoftmaxParams const*)data;
 		std::cout << std::to_string(p->beta) << " };";
 	}
 	break;
-	default: std::cout << "uint8_t " << name << " = { " << int(*(uint8_t const*)data) << " }; /* "
+	default: {
+		size_t datalen= GetBuiltinDataSize(op, subgraph);
+		std::cout << "uint8_t " << name << "["<<datalen<<"] = { ";
+		for (uint32_t i=0; i<datalen; ++i)
+			std::cout << int(((uint8_t const*)data)[i]) << ", ";
+		std::cout <<  " }; /* op type "
 		<< int(op) << " */";
+	}
 		break;
 	}
 	std::cout << std::endl;
 }
 
-#define FUNCNAME(X) if (ptr==&X) return #X
+#define FUNCNAME(X) if (ptr==&X) return std::make_pair<std::string,bool>(#X,true)
 #define FUNC_SET(X) FUNCNAME(tflite::ops::micro::X::Init); FUNCNAME(tflite::ops::micro::X::Prepare); FUNCNAME(tflite::ops::micro::X::Eval)
 #define FUNC_SET2(X) FUNCNAME(tflite::ops::micro::X::Prepare); FUNCNAME(tflite::ops::micro::X::Eval)
 #define FUNC_SET2P(X,Y) FUNCNAME(tflite::ops::micro::X::Y##Prepare); FUNCNAME(tflite::ops::micro::X::Y##Eval)
 
-static std::string function_name(void const*ptr) {
+static std::pair<std::string,bool> function_name(void const*ptr) {
 #if 0
 	FUNCNAME(FullyConnectedEval);
 #endif
@@ -212,58 +251,61 @@ static std::string function_name(void const*ptr) {
 	FUNC_SET2P(activations, Softmax);
 	FUNCNAME(tflite::ops::micro::pooling::MaxEval);
 	FUNCNAME(tflite::ops::micro::pooling::AverageEval);
-	return "unknown_function";
+	return std::make_pair<std::string,bool>("unknown_function", false);
+}
+
+static void declare_function(const void* ptr, tflite::BuiltinOperator op,
+				std::set<std::string> &known, std::set<tflite::BuiltinOperator> &known2,
+				char const* result, char const* arguments, std::string& init_statements) {
+	if (ptr) {
+		std::pair<std::string,bool> name = function_name(ptr);
+		if (!name.second) {
+			if (known2.find(op)==known2.end()) {
+				std::cout << "static TfLiteRegistration *operator_" << tflite::EnumNameBuiltinOperator(op) << ";\n";
+				init_statements += "  operator_"+std::string(tflite::EnumNameBuiltinOperator(op))
+					+ " = tflite::ops::micro::Register_" + tflite::EnumNameBuiltinOperator(op) + ";\n";
+			}
+		}
+		else if (known.find(name.first)==known.end()) {
+			if (name.first.substr(0,20)=="tflite::ops::micro::") {
+				std::string::size_type sep = name.first.find("::", 20);
+				if (sep != std::string::npos) {
+					std::string nmspc = name.first.substr(20, sep - 20);
+					std::string fun = name.first.substr(sep + 2);
+					std::cout << "namespace " << nmspc << " { extern " << result << ' ' << fun
+						<< '(' << arguments << "); }" << std::endl;
+				}
+			}
+			else { // hopefully no namespace
+				std::cout << "extern " << result << ' ' << name.first << '(' << arguments << ");" << std::endl;
+			}
+			known.insert(name.first);
+		}
+	}
 }
 
 void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter, 
 	uint8_t const*tflite_array, uint8_t const* tflite_end, 
 	uint8_t const*tensor_arena, uint8_t const* arena_end) {
+	tflite::Model const* model = ::tflite::GetModel(tflite_array);  // needed for size calculation
 	std::cout << "#include \"tensorflow/lite/c/builtin_op_data.h\"" << std::endl;
 	std::cout << std::endl;
 
 	// declare functions
 	std::cout << "namespace tflite { namespace ops { namespace micro {" << std::endl;
 	std::set<std::string> known;
+	std::set<tflite::BuiltinOperator> known2;
+	std::string init_statements;
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
-		if (interpreter->node_and_registration(i).registration->init) {
-			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->init));
-			if (known.find(name)==known.end() && name.substr(0,20)=="tflite::ops::micro::") {
-				std::string::size_type sep = name.find("::", 20);
-				if (sep != std::string::npos) {
-					std::string nmspc = name.substr(20, sep - 20);
-					std::string fun = name.substr(sep + 2);
-					std::cout << "namespace " << nmspc << " { extern void* " << fun
-						<< "(TfLiteContext*, const char*, size_t); }" << std::endl;
-					known.insert(name);
-				}
-			}
-		}
-		if (interpreter->node_and_registration(i).registration->prepare) {
-			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->prepare));
-			if (known.find(name) == known.end() && name.substr(0, 20) == "tflite::ops::micro::") {
-				std::string::size_type sep = name.find("::", 20);
-				if (sep != std::string::npos) {
-					std::string nmspc = name.substr(20, sep - 20);
-					std::string fun = name.substr(sep + 2);
-					std::cout << "namespace " << nmspc << " { extern TfLiteStatus " << fun
-						<< "(TfLiteContext*, TfLiteNode*); }" << std::endl;
-					known.insert(name);
-				}
-			}
-		}
-		if (interpreter->node_and_registration(i).registration->invoke) {
-			std::string name = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
-			if (known.find(name) == known.end() && name.substr(0, 20) == "tflite::ops::micro::") {
-				std::string::size_type sep = name.find("::", 20);
-				if (sep != std::string::npos) {
-					std::string nmspc = name.substr(20, sep - 20);
-					std::string fun = name.substr(sep + 2);
-					std::cout << "namespace " << nmspc << " { extern TfLiteStatus " << fun
-						<< "(TfLiteContext*, TfLiteNode*); }" << std::endl;
-					known.insert(name);
-				}
-			}
-		}
+		declare_function((const void*)(interpreter->node_and_registration(i).registration->init), 
+			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
+			known, known2, "void*", "TfLiteContext*, const char*, size_t", init_statements);
+		declare_function((const void*)(interpreter->node_and_registration(i).registration->prepare), 
+			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
+			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", init_statements);
+		declare_function((const void*)(interpreter->node_and_registration(i).registration->invoke), 
+			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
+			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", init_statements);
 	}
 	std::cout << "} } }" << std::endl;
 	std::cout << std::endl;
@@ -276,7 +318,8 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) {
 			dump_builtin(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
 				interpreter->node_and_registration(i).node.builtin_data, 
-				std::string(prefix) + "opdata" + std::to_string(i));
+				std::string(prefix) + "opdata" + std::to_string(i),
+				model->subgraphs()[0][0]);
 		}
 	}
 	// quantization parameters
@@ -365,22 +408,33 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << "  " << prefix << "context.tensors_size = " << interpreter->tensors_size() << ";" << std::endl;
 	std::cout << "  " << prefix << "context.tensors = (TfLiteTensor*)" << prefix << "tensors;" << std::endl;
 	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = &AllocatePersistentBuffer;" << std::endl;
+	std::cout << init_statements;
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->init) {
 			// TODO: There is a good chance that just assigning user_data will do the trick as well (unless it gets initialized)
 			if (mem_in(interpreter->node_and_registration(i).node.user_data, tensor_arena, arena_end)) {
 				std::cout << "  next_allocation = (void*)(tensor_arena + " << (((uint8_t const*)interpreter->node_and_registration(i).node.user_data) - tensor_arena) << ");" << std::endl;
 			}
+			std::pair<std::string,bool> name= function_name((const void*)(interpreter->node_and_registration(i).registration->init));
+			if (!name.second) 
+				name.first= "(*operator_" 
+				+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
+				+ "->init)";
 			std::cout << "  " << prefix << "nodes[" << i << "].user_data = "
-				<< function_name((const void*)(interpreter->node_and_registration(i).registration->init))
+				<< name.first
 				// TODO: Handle custom operators
 				<< "(&" << prefix << "context, (const char*)(" << prefix << "nodes[" << i << "].builtin_data), 0);" << std::endl;
 		}
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->prepare) {
+			std::pair<std::string,bool> name= function_name((const void*)(interpreter->node_and_registration(i).registration->prepare));
+			if (!name.second) 
+				name.first= "(*operator_" 
+				+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
+				+ "->prepare)";
 			std::cout << "  " 
-				<< function_name((const void*)(interpreter->node_and_registration(i).registration->prepare))
+				<< name.first
 				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
 		}
 	}
@@ -397,13 +451,17 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << std::endl;
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
-		std::string funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
+		std::pair<std::string, bool> funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
+		if (!funname.second)
+			funname.first= "(*operator_" 
+			+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
+			+ "->prepare)";
 		std::cout << "  "
-			<< funname
+			<< funname.first
 			<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
-		if (funname=="unknown_function") {
-			std::cerr << "unknown function for code " << int(interpreter->node_and_registration(i).registration->builtin_code) << std::endl;
-		}
+		// if (funname=="unknown_function") {
+		// 	std::cerr << "unknown function for code " << int(interpreter->node_and_registration(i).registration->builtin_code) << std::endl;
+		// }
 	}
 	std::cout << "}" << std::endl;
 }
