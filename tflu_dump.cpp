@@ -254,16 +254,22 @@ static std::pair<std::string,bool> function_name(void const*ptr) {
 	return std::make_pair<std::string,bool>("unknown_function", false);
 }
 
+// outside declarations are written later and init_statements inside the init function
 static void declare_function(const void* ptr, tflite::BuiltinOperator op,
 				std::set<std::string> &known, std::set<tflite::BuiltinOperator> &known2,
-				char const* result, char const* arguments, std::string& init_statements) {
+				char const* result, char const* arguments, 
+				std::string& outside_declarations, std::string& init_statements) {
 	if (ptr) {
 		std::pair<std::string,bool> name = function_name(ptr);
 		if (!name.second) {
 			if (known2.find(op)==known2.end()) {
-				std::cout << "static TfLiteRegistration *operator_" << tflite::EnumNameBuiltinOperator(op) << ";\n";
-				init_statements += "  operator_"+std::string(tflite::EnumNameBuiltinOperator(op))
-					+ " = tflite::ops::micro::Register_" + tflite::EnumNameBuiltinOperator(op) + ";\n";
+				std::string opname = tflite::EnumNameBuiltinOperator(op);
+				std::cout << "extern TfLiteRegistration *Register_" << opname << "(void);\n";
+
+				outside_declarations += "static TfLiteRegistration *operator_" + opname + ";\n";
+				init_statements += "  operator_"+opname
+					+ " = tflite::ops::micro::Register_" + opname + "();\n";
+				known2.insert(op);
 			}
 		}
 		else if (known.find(name.first)==known.end()) {
@@ -276,8 +282,8 @@ static void declare_function(const void* ptr, tflite::BuiltinOperator op,
 						<< '(' << arguments << "); }" << std::endl;
 				}
 			}
-			else { // hopefully no namespace
-				std::cout << "extern " << result << ' ' << name.first << '(' << arguments << ");" << std::endl;
+			else { // hopefully outside of namespace declaration fits here
+				outside_declarations += "extern " + std::string(result) + ' ' + name.first + '(' + arguments + ");\n";
 			}
 			known.insert(name.first);
 		}
@@ -295,19 +301,20 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << "namespace tflite { namespace ops { namespace micro {" << std::endl;
 	std::set<std::string> known;
 	std::set<tflite::BuiltinOperator> known2;
-	std::string init_statements;
+	std::string outside_declarations, init_statements;
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		declare_function((const void*)(interpreter->node_and_registration(i).registration->init), 
 			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
-			known, known2, "void*", "TfLiteContext*, const char*, size_t", init_statements);
+			known, known2, "void*", "TfLiteContext*, const char*, size_t", outside_declarations, init_statements);
 		declare_function((const void*)(interpreter->node_and_registration(i).registration->prepare), 
 			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
-			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", init_statements);
+			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", outside_declarations, init_statements);
 		declare_function((const void*)(interpreter->node_and_registration(i).registration->invoke), 
 			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
-			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", init_statements);
+			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", outside_declarations, init_statements);
 	}
 	std::cout << "} } }" << std::endl;
+	std::cout << outside_declarations;
 	std::cout << std::endl;
 
 	// create static tensor+node+context storage
@@ -417,9 +424,9 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 			}
 			std::pair<std::string,bool> name= function_name((const void*)(interpreter->node_and_registration(i).registration->init));
 			if (!name.second) 
-				name.first= "(*operator_" 
+				name.first= "(*(operator_" 
 				+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
-				+ "->init)";
+				+ "->init))";
 			std::cout << "  " << prefix << "nodes[" << i << "].user_data = "
 				<< name.first
 				// TODO: Handle custom operators
@@ -430,9 +437,9 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		if (interpreter->node_and_registration(i).registration->prepare) {
 			std::pair<std::string,bool> name= function_name((const void*)(interpreter->node_and_registration(i).registration->prepare));
 			if (!name.second) 
-				name.first= "(*operator_" 
+				name.first= "(*(operator_" 
 				+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
-				+ "->prepare)";
+				+ "->prepare))";
 			std::cout << "  " 
 				<< name.first
 				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
@@ -453,9 +460,9 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		std::pair<std::string, bool> funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
 		if (!funname.second)
-			funname.first= "(*operator_" 
+			funname.first= "(*(operator_" 
 			+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
-			+ "->prepare)";
+			+ "->invoke))";
 		std::cout << "  "
 			<< funname.first
 			<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;

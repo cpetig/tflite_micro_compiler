@@ -27,6 +27,8 @@ extern void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	uint8_t const*tflite_array, uint8_t const* tflite_end,
 	uint8_t const*tensor_arena, uint8_t const* arena_end);
 
+void register_addons(tflite::ops::micro::AllOpsResolver *);
+
 void init(void)
 {
 	static tflite::MicroErrorReporter micro_error_reporter;
@@ -44,6 +46,7 @@ void init(void)
 	}
 	static tflite::ops::micro::AllOpsResolver local_resolver;
 	resolver= &local_resolver;
+	register_addons(resolver);
 
 	// Build an interpreter to run the model with.
 	static tflite::MicroInterpreter static_interpreter(model, *resolver, tensor_arena, tensor_arena_size, error_reporter);

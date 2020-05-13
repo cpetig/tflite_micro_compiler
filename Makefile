@@ -13,7 +13,7 @@ all: hello_world mobilnet hello_world_compiled compiler
 clean:
 	rm *.o hello_world mobilnet hello_world_compiled compiler
 
-compiler: compiler.o tflu_dump.o
+compiler: compiler.o tflu_dump.o fake_implementations.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o tflu_dump.o
