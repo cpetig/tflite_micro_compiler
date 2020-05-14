@@ -198,6 +198,7 @@ static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::stri
 			<< to_string(p->asymmetric_quantize_inputs) << " };";
 	}
 	break;
+	case tflite::BuiltinOperator_MAX_POOL_2D:
 	case tflite::BuiltinOperator_AVERAGE_POOL_2D: {
 		std::cout << "TfLitePoolParams " << name << " = { ";
 		TfLitePoolParams const*p = (TfLitePoolParams const*)data;
@@ -210,10 +211,14 @@ static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::stri
 			<< to_string(p->computed.padding) << " } };";
 	}
 	break;
-	// case tflite::BuiltinOperator_RESHAPE: {
-	//  	std::cout << "uint8_t " << name << " = 0; /* is there reshape data? */";
-	// }
-	// break;
+	case tflite::BuiltinOperator_RESHAPE: {
+		std::cout << "TfLiteReshapeParams " << name << " = { { ";
+		TfLiteReshapeParams const*p = (TfLiteReshapeParams const*)data;
+		for (uint32_t i=0;i<TFLITE_RESHAPE_PARAMS_MAX_DIMENSION_COUNT;++i)
+			std::cout << p->shape[i] << ", ";
+		std::cout << "}, " << p->num_dimensions << " };";
+	}
+	break;
 	case tflite::BuiltinOperator_SOFTMAX: {
 		std::cout << "TfLiteSoftmaxParams " << name << " = { ";
 		TfLiteSoftmaxParams const*p = (TfLiteSoftmaxParams const*)data;

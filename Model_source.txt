@@ -1,0 +1,2 @@
+https://www.tensorflow.org/tutorials/images/cnn
+https://storage.googleapis.com/tfhub-lite-models/tensorflow/lite-model/mobilenet_v1_0.25_160_quantized/1/default/1.tflite

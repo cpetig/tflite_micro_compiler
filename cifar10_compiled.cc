@@ -16,11 +16,11 @@ static TfLiteTensor cifar_tensors[20];
 static TfLiteNode cifar_nodes[8];
 static TfLiteContext cifar_context;
 static const TfLiteConvParams cifar_opdata0 = { kTfLitePaddingValid, 1,1, kTfLiteActRelu, 1,1 };
-static const uint8_t cifar_opdata1[40] = { 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  }; /* op type 17 */
+static const TfLitePoolParams cifar_opdata1 = { kTfLitePaddingValid, 2,2, 2,2, kTfLiteActNone, { { 0,0, 0,0 } } };
 static const TfLiteConvParams cifar_opdata2 = { kTfLitePaddingValid, 1,1, kTfLiteActRelu, 1,1 };
-static const uint8_t cifar_opdata3[40] = { 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  }; /* op type 17 */
+static const TfLitePoolParams cifar_opdata3 = { kTfLitePaddingValid, 2,2, 2,2, kTfLiteActNone, { { 0,0, 0,0 } } };
 static const TfLiteConvParams cifar_opdata4 = { kTfLitePaddingValid, 1,1, kTfLiteActRelu, 1,1 };
-static const uint8_t cifar_opdata5[36] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  }; /* op type 22 */
+static const TfLiteReshapeParams cifar_opdata5 = { { 0, 0, 0, 0, 0, 0, 0, 0, }, 0 };
 static const TfLiteFullyConnectedParams cifar_opdata6 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
 static const TfLiteFullyConnectedParams cifar_opdata7 = { kTfLiteActNone, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
 
@@ -169,6 +169,7 @@ void cifar_init(uint8_t const*tflite_array, uint8_t const*tensor_arena) {
   cifar_nodes[6].user_data = tflite::ops::micro::fully_connected::Init(&cifar_context, (const char*)(cifar_nodes[6].builtin_data), 0);
   next_allocation = (void*)(tensor_arena + 146656);
   cifar_nodes[7].user_data = tflite::ops::micro::fully_connected::Init(&cifar_context, (const char*)(cifar_nodes[7].builtin_data), 0);
+  cifar_context.AllocatePersistentBuffer = nullptr;
   tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[0]);
   tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[2]);
   tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[4]);
