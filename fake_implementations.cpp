@@ -31,6 +31,13 @@ namespace tflite { namespace ops { namespace micro {
         };
         return &res;
     }
+    namespace squeeze { extern TfLiteStatus Eval(TfLiteContext*, TfLiteNode*) { return kTfLiteOk; } }
+    TfLiteRegistration *Register_SQUEEZE(void) {
+        static TfLiteRegistration res = {
+            nullptr, nullptr, nullptr, squeeze::Eval,
+        };
+        return &res;
+    }
 }}}
 
 void register_addons(tflite::ops::micro::AllOpsResolver *res) {
@@ -38,4 +45,5 @@ void register_addons(tflite::ops::micro::AllOpsResolver *res) {
     res->AddBuiltin(tflite::BuiltinOperator_EXP, tflite::ops::micro::Register_EXP());
     res->AddBuiltin(tflite::BuiltinOperator_SUM, tflite::ops::micro::Register_SUM());
     res->AddBuiltin(tflite::BuiltinOperator_DIV, tflite::ops::micro::Register_DIV());
+    res->AddBuiltin(tflite::BuiltinOperator_SQUEEZE, tflite::ops::micro::Register_SQUEEZE());
 }
