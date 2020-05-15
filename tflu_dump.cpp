@@ -300,6 +300,8 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	uint8_t const*tensor_arena, uint8_t const* arena_end) {
 	tflite::Model const* model = ::tflite::GetModel(tflite_array);  // needed for size calculation
 	std::cout << "#include \"tensorflow/lite/c/builtin_op_data.h\"" << std::endl;
+	std::cout << "#include <stdint.h>\n";
+	std::cout << "#include <assert.h>\n";
 	std::cout << std::endl;
 
 	// declare functions
@@ -362,16 +364,16 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << std::endl;
 
 	// allocator helpers
-	std::cout << "static void* next_allocation = nullptr;" << std::endl;
+	std::cout << "static uint8_t* next_allocation = nullptr;" << std::endl;
 	std::cout << "static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx, size_t bytes, void** ptr) {" << std::endl;
+	std::cout << "  next_allocation -= bytes;\n";
 	std::cout << "  *ptr = next_allocation;" << std::endl;
-	std::cout << "  next_allocation = nullptr;" << std::endl;
 	std::cout << "  return kTfLiteOk;" << std::endl;
 	std::cout << "}" << std::endl;
 	std::cout << std::endl;
 
 	// init function (setting up tensors+node, call Init and Prepare)
-	std::cout << "void " << prefix << "init(uint8_t const*tflite_array, uint8_t const*tensor_arena) {" << std::endl;
+	std::cout << "void " << prefix << "init(uint8_t const*tflite_array, uint8_t* tensor_arena) {" << std::endl;
 	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
 		TfLiteTensor const* t = interpreter->tensor(i);
 		std::cout << "  " << prefix << "tensors[" << i << "].type = " << to_string(t->type) << ';' << std::endl;
@@ -420,13 +422,13 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << "  " << prefix << "context.tensors_size = " << interpreter->tensors_size() << ";" << std::endl;
 	std::cout << "  " << prefix << "context.tensors = (TfLiteTensor*)" << prefix << "tensors;" << std::endl;
 	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = &AllocatePersistentBuffer;" << std::endl;
+	// this code assumes that persistent allocations are made from the end (which is true for the current implementation)
+	std::cout << "  " << "next_allocation = tensor_arena + " << (arena_end-tensor_arena) << "; // = minimum size of the tensor arena\n";
+	std::cout << "  " << "TfLiteStatus status = kTfLiteOk;\n";
 	std::cout << init_statements;
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (interpreter->node_and_registration(i).registration->init) {
 			// TODO: There is a good chance that just assigning user_data will do the trick as well (unless it gets initialized)
-			if (mem_in(interpreter->node_and_registration(i).node.user_data, tensor_arena, arena_end)) {
-				std::cout << "  next_allocation = (void*)(tensor_arena + " << (((uint8_t const*)interpreter->node_and_registration(i).node.user_data) - tensor_arena) << ");" << std::endl;
-			}
 			std::pair<std::string,bool> name= function_name((const void*)(interpreter->node_and_registration(i).registration->init));
 			if (!name.second) 
 				name.first= "(*(operator_" 
@@ -445,11 +447,13 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 				name.first= "(*(operator_" 
 				+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
 				+ "->prepare))";
-			std::cout << "  " 
+			std::cout << "  status = " 
 				<< name.first
 				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
+			std::cout << "  assert(status==kTfLiteOk);\n";
 		}
 	}
+	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = nullptr;" << std::endl;
 	std::cout << '}' << std::endl;
 	std::cout << std::endl;
 
@@ -462,18 +466,17 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	for (uint32_t i = 0; i < interpreter->outputs().size(); ++i) {
 		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << std::endl;
 	}
+	std::cout << "  " << "TfLiteStatus status = kTfLiteOk;\n";
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		std::pair<std::string, bool> funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));
 		if (!funname.second)
 			funname.first= "(*(operator_" 
 			+ std::string(tflite::EnumNameBuiltinOperator(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code)))
 			+ "->invoke))";
-		std::cout << "  "
+		std::cout << "  status = "
 			<< funname.first
 			<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
-		// if (funname=="unknown_function") {
-		// 	std::cerr << "unknown function for code " << int(interpreter->node_and_registration(i).registration->builtin_code) << std::endl;
-		// }
+		std::cout << "  assert(status==kTfLiteOk);\n";
 	}
 	std::cout << "}" << std::endl;
 }

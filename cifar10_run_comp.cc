@@ -22,7 +22,7 @@ extern "C" const unsigned char cifar10_tflite[];
 extern "C" const int cifar10_tflite_len;
 extern "C" const unsigned char truck[];
 
-extern void cifar_init(uint8_t const*tflite_array, uint8_t const*tensor_arena);
+extern void cifar_init(uint8_t const*tflite_array, uint8_t *tensor_arena);
 extern void cifar_invoke(void const* (inputs[1]), void * (outputs[1]));
 
 void test_compiled(void) {

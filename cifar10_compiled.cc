@@ -1,4 +1,6 @@
 #include "tensorflow/lite/c/builtin_op_data.h"
+#include <stdint.h>
+#include <assert.h>
 
 namespace tflite { namespace ops { namespace micro {
 namespace conv { extern void* Init(TfLiteContext*, const char*, size_t); }
@@ -24,14 +26,14 @@ static const TfLiteReshapeParams cifar_opdata5 = { { 0, 0, 0, 0, 0, 0, 0, 0, }, 
 static const TfLiteFullyConnectedParams cifar_opdata6 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
 static const TfLiteFullyConnectedParams cifar_opdata7 = { kTfLiteActNone, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
 
-static void* next_allocation = nullptr;
+static uint8_t* next_allocation = nullptr;
 static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx, size_t bytes, void** ptr) {
+  next_allocation -= bytes;
   *ptr = next_allocation;
-  next_allocation = nullptr;
   return kTfLiteOk;
 }
 
-void cifar_init(uint8_t const*tflite_array, uint8_t const*tensor_arena) {
+void cifar_init(uint8_t const*tflite_array, uint8_t* tensor_arena) {
   cifar_tensors[0].type = kTfLiteFloat32;
   cifar_tensors[0].allocation_type = kTfLiteArenaRw;
   cifar_tensors[0].name = (char*)(tflite_array + 493316); /* input_1 */
@@ -159,34 +161,46 @@ void cifar_init(uint8_t const*tflite_array, uint8_t const*tensor_arena) {
   cifar_context.tensors_size = 20;
   cifar_context.tensors = (TfLiteTensor*)cifar_tensors;
   cifar_context.AllocatePersistentBuffer = &AllocatePersistentBuffer;
-  next_allocation = (void*)(tensor_arena + 146816);
+  next_allocation = tensor_arena + 150000; // = minimum size of the tensor arena
+  TfLiteStatus status = kTfLiteOk;
   cifar_nodes[0].user_data = tflite::ops::micro::conv::Init(&cifar_context, (const char*)(cifar_nodes[0].builtin_data), 0);
-  next_allocation = (void*)(tensor_arena + 146768);
   cifar_nodes[2].user_data = tflite::ops::micro::conv::Init(&cifar_context, (const char*)(cifar_nodes[2].builtin_data), 0);
-  next_allocation = (void*)(tensor_arena + 146720);
   cifar_nodes[4].user_data = tflite::ops::micro::conv::Init(&cifar_context, (const char*)(cifar_nodes[4].builtin_data), 0);
-  next_allocation = (void*)(tensor_arena + 146688);
   cifar_nodes[6].user_data = tflite::ops::micro::fully_connected::Init(&cifar_context, (const char*)(cifar_nodes[6].builtin_data), 0);
-  next_allocation = (void*)(tensor_arena + 146656);
   cifar_nodes[7].user_data = tflite::ops::micro::fully_connected::Init(&cifar_context, (const char*)(cifar_nodes[7].builtin_data), 0);
+  status = tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[0]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[2]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[4]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::reshape::Prepare(&cifar_context, &cifar_nodes[5]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::fully_connected::Prepare(&cifar_context, &cifar_nodes[6]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::fully_connected::Prepare(&cifar_context, &cifar_nodes[7]);
+  assert(status==kTfLiteOk);
   cifar_context.AllocatePersistentBuffer = nullptr;
-  tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[0]);
-  tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[2]);
-  tflite::ops::micro::conv::Prepare(&cifar_context, &cifar_nodes[4]);
-  tflite::ops::micro::reshape::Prepare(&cifar_context, &cifar_nodes[5]);
-  tflite::ops::micro::fully_connected::Prepare(&cifar_context, &cifar_nodes[6]);
-  tflite::ops::micro::fully_connected::Prepare(&cifar_context, &cifar_nodes[7]);
 }
 
 void cifar_invoke(void const* (inputs[1]), void * (outputs[1])) {
   cifar_tensors[0].data.raw_const = (const char*)(inputs[0]);
   cifar_tensors[19].data.raw = (char*)(outputs[0]);
-  tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[0]);
-  tflite::ops::micro::pooling::MaxEval(&cifar_context, &cifar_nodes[1]);
-  tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[2]);
-  tflite::ops::micro::pooling::MaxEval(&cifar_context, &cifar_nodes[3]);
-  tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[4]);
-  tflite::ops::micro::reshape::Eval(&cifar_context, &cifar_nodes[5]);
-  tflite::ops::micro::fully_connected::Eval(&cifar_context, &cifar_nodes[6]);
-  tflite::ops::micro::fully_connected::Eval(&cifar_context, &cifar_nodes[7]);
+  TfLiteStatus status = kTfLiteOk;
+  status = tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[0]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::pooling::MaxEval(&cifar_context, &cifar_nodes[1]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[2]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::pooling::MaxEval(&cifar_context, &cifar_nodes[3]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[4]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::reshape::Eval(&cifar_context, &cifar_nodes[5]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::fully_connected::Eval(&cifar_context, &cifar_nodes[6]);
+  assert(status==kTfLiteOk);
+  status = tflite::ops::micro::fully_connected::Eval(&cifar_context, &cifar_nodes[7]);
+  assert(status==kTfLiteOk);
 }
