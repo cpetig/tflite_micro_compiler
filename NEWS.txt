@@ -1,0 +1,7 @@
+2020-05-15
+    Properly handle allocation from the Prepare method
+    move example code to separate directory
+
+2020-05-13
+    Support unknown operators by guessing the name of the register function
+
