@@ -10,7 +10,7 @@
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
-static const int tensor_arena_size = 150 * 1024;
+static const int tensor_arena_size = 150 * 1000;
 static uint8_t tensor_arena[tensor_arena_size];
 
 extern "C" const unsigned char cifar10_tflite[];

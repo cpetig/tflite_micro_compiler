@@ -5,10 +5,48 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) example Launch",
+            "name": "(gdb) hello example Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/hello_world",
+            "program": "${workspaceFolder}/example/hello_world",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) cifar compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/cifar10_compiled",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) cifar interpreter example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/cifar10",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

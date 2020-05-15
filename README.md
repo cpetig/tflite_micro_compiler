@@ -11,7 +11,7 @@ Building the code:
 - start with building the tflite micro library as described in https://www.tensorflow.org/lite/microcontrollers/library:
     - cd ../tensorflow
     - make -f tensorflow/lite/micro/tools/make/Makefile hello_world_bin
-    [optionally add BUILD_TARGET=debug]
+    [optionally add BUILD_TYPE=debug]
 - now run  make  in this project to get the compiler
 
 USAGE:
