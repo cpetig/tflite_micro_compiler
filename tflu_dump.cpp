@@ -232,7 +232,7 @@ static void dump_builtin(tflite::BuiltinOperator op, void const* data, std::stri
 	}
 		break;
 	}
-	std::cout << std::endl;
+	std::cout << '\n';
 }
 
 #define FUNCNAME(X) if (ptr==&X) return std::make_pair<std::string,bool>(#X,true)
@@ -278,7 +278,7 @@ static void declare_function(const void* ptr, tflite::BuiltinOperator op,
 					std::string nmspc = name.first.substr(20, sep - 20);
 					std::string fun = name.first.substr(sep + 2);
 					std::cout << "namespace " << nmspc << " { extern " << result << ' ' << fun
-						<< '(' << arguments << "); }" << std::endl;
+						<< '(' << arguments << "); }" << '\n';
 				}
 			}
 			else { // hopefully outside of namespace declaration fits here
@@ -381,13 +381,13 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	uint8_t const*tflite_array, uint8_t const* tflite_end, 
 	uint8_t const*tensor_arena, uint8_t const* arena_end) {
 	tflite::Model const* model = ::tflite::GetModel(tflite_array);  // needed for size calculation
-	std::cout << "#include \"tensorflow/lite/c/builtin_op_data.h\"" << std::endl;
+	std::cout << "#include \"tensorflow/lite/c/builtin_op_data.h\"" << '\n';
 	std::cout << "#include <stdint.h>\n";
 	std::cout << "#include <assert.h>\n";
-	std::cout << std::endl;
+	std::cout << '\n';
 
 	// declare functions
-	std::cout << "namespace tflite { namespace ops { namespace micro {" << std::endl;
+	std::cout << "namespace tflite { namespace ops { namespace micro {" << '\n';
 	std::set<std::string> known;
 	std::set<tflite::BuiltinOperator> known2;
 	std::string outside_declarations, init_statements;
@@ -402,14 +402,14 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 			tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
 			known, known2, "TfLiteStatus", "TfLiteContext*, TfLiteNode*", outside_declarations, init_statements);
 	}
-	std::cout << "} } }" << std::endl;
+	std::cout << "} } }" << '\n';
 	std::cout << outside_declarations;
-	std::cout << std::endl;
+	std::cout << '\n';
 
 	// create static tensor+node+context storage
-	std::cout << "static TfLiteTensor " << prefix << "tensors[" << interpreter->tensors_size() << "];" << std::endl;
-	std::cout << "static TfLiteNode " << prefix << "nodes[" << interpreter->operators_size() << "];" << std::endl;
-	std::cout << "static TfLiteContext " << prefix << "context;" << std::endl;
+	std::cout << "static TfLiteTensor " << prefix << "tensors[" << interpreter->tensors_size() << "];" << '\n';
+	std::cout << "static TfLiteNode " << prefix << "nodes[" << interpreter->operators_size() << "];" << '\n';
+	std::cout << "static TfLiteContext " << prefix << "context;" << '\n';
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) {
 			dump_builtin(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
@@ -435,51 +435,51 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 			for (uint32_t j=0;j<q->scale->size ; ++j){
 				std::cout << q->scale->data[j] << ", ";
 			}
-			std::cout << "} };" << std::endl;
+			std::cout << "} };" << '\n';
 			std::cout << "static const int " << prefix << "quant_zero" << i 
 				<< "[" << q->zero_point->size+1 << "] = { " 
 				<< q->zero_point->size << ", ";
 			for (uint32_t j=0;j<q->zero_point->size ; ++j){
 				std::cout << q->zero_point->data[j] << ", ";
 			}
-			std::cout << "};" << std::endl;
+			std::cout << "};" << '\n';
 			std::cout << "static const TfLiteAffineQuantization " << prefix << "quantization" << i << " = { "
 				<< "(TfLiteFloatArray*)&" << prefix << "quant_scale" << i << ", "
 				<< "(TfLiteIntArray*)&" << prefix << "quant_zero" << i << ", "
-				<< q->quantized_dimension << " };" << std::endl;
+				<< q->quantized_dimension << " };" << '\n';
 		}
 	}
-	std::cout << std::endl;
+	std::cout << '\n';
 
 	// allocator helpers
-	std::cout << "static uint8_t* next_allocation = nullptr;" << std::endl;
-	std::cout << "static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx, size_t bytes, void** ptr) {" << std::endl;
+	std::cout << "static uint8_t* next_allocation = nullptr;" << '\n';
+	std::cout << "static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx, size_t bytes, void** ptr) {" << '\n';
 	std::cout << "  next_allocation -= bytes;\n";
-	std::cout << "  *ptr = next_allocation;" << std::endl;
-	std::cout << "  return kTfLiteOk;" << std::endl;
-	std::cout << "}" << std::endl;
-	std::cout << std::endl;
+	std::cout << "  *ptr = next_allocation;" << '\n';
+	std::cout << "  return kTfLiteOk;" << '\n';
+	std::cout << "}" << '\n';
+	std::cout << '\n';
 
 	// init function (setting up tensors+node, call Init and Prepare)
 	std::cout << "void " << prefix << "init(" 
 #ifndef EMBED_TENSORS // this argument is only needed if the tensors aren't dumped into the generated file
 				<< "uint8_t const*tflite_array, " 
 #endif
-				<< "uint8_t* tensor_arena) {" << std::endl;
+				<< "uint8_t* tensor_arena) {" << '\n';
 	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
 		TfLiteTensor const* t = interpreter->tensor(i);
-		std::cout << "  " << prefix << "tensors[" << i << "].type = " << to_string(t->type) << ';' << std::endl;
-		std::cout << "  " << prefix << "tensors[" << i << "].allocation_type = " << to_string(t->allocation_type) << ';' << std::endl;
-		std::cout << "  " << prefix << "tensors[" << i << "].bytes = " << t->bytes << ';' << std::endl;
+		std::cout << "  " << prefix << "tensors[" << i << "].type = " << to_string(t->type) << ';' << '\n';
+		std::cout << "  " << prefix << "tensors[" << i << "].allocation_type = " << to_string(t->allocation_type) << ';' << '\n';
+		std::cout << "  " << prefix << "tensors[" << i << "].bytes = " << t->bytes << ';' << '\n';
 #ifndef EMBED_TENSORS
 		if (mem_in(t->name, tflite_array, tflite_end)) {
 			std::cout << "  " << prefix << "tensors[" << i << "].name = (char*)(tflite_array + " << (((uint8_t const*)t->name) - tflite_array)
-				<< "); /* " << t->name << " */" << std::endl;
+				<< "); /* " << t->name << " */" << '\n';
 		}
 		else 
 #endif
 		{
-			std::cout << "  " << prefix << "tensors[" << i << "].name = (char*)\"" << t->name << "\";" << std::endl;
+			std::cout << "  " << prefix << "tensors[" << i << "].name = (char*)\"" << t->name << "\";" << '\n';
 		}
 		if (mem_in(t->dims, tflite_array, tflite_end)) {
 #ifdef EMBED_TENSORS
@@ -487,45 +487,45 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 #else
 			std::cout << "  " << prefix << "tensors[" << i << "].dims = (struct TfLiteIntArray*)(tflite_array + " << (((uint8_t const*)t->dims) - tflite_array) << "); /* (";
 			for (int32_t j = 0; j < t->dims->size; ++j) std::cout << t->dims->data[j] << ',';
-			std::cout << ") */" << std::endl;
+			std::cout << ") */" << '\n';
 #endif
 		}
 		if (mem_in(t->data.raw_const, tflite_array, tflite_end))
 #ifdef EMBED_TENSORS
 			std::cout << "  " << prefix << "tensors[" << i << "].data.raw_const = (const char*)" << prefix << "tensor_data" << i << ";\n";
 #else
-			std::cout << "  " << prefix << "tensors[" << i << "].data.raw_const = (const char*)(tflite_array + " << (((uint8_t const*)t->data.raw_const) - tflite_array) << ");" << std::endl;
+			std::cout << "  " << prefix << "tensors[" << i << "].data.raw_const = (const char*)(tflite_array + " << (((uint8_t const*)t->data.raw_const) - tflite_array) << ");" << '\n';
 #endif
 		else if (mem_in(t->data.raw_const, tensor_arena, arena_end))
-			std::cout << "  " << prefix << "tensors[" << i << "].data.raw = (char*)(tensor_arena + " << (((uint8_t const*)t->data.raw_const) - tensor_arena) << ");" << std::endl;
+			std::cout << "  " << prefix << "tensors[" << i << "].data.raw = (char*)(tensor_arena + " << (((uint8_t const*)t->data.raw_const) - tensor_arena) << ");" << '\n';
 		if (t->params.scale!=0.0f) {
-			std::cout << "  " << prefix << "tensors[" << i << "].params.scale = " << t->params.scale << ";" << std::endl;
-			std::cout << "  " << prefix << "tensors[" << i << "].params.zero_point = " << t->params.zero_point << ";" << std::endl;
+			std::cout << "  " << prefix << "tensors[" << i << "].params.scale = " << t->params.scale << ";" << '\n';
+			std::cout << "  " << prefix << "tensors[" << i << "].params.zero_point = " << t->params.zero_point << ";" << '\n';
 		}
 		if (t->quantization.type == kTfLiteAffineQuantization) {
-			std::cout << "  " << prefix << "tensors[" << i << "].quantization.type = kTfLiteAffineQuantization;" << std::endl;
+			std::cout << "  " << prefix << "tensors[" << i << "].quantization.type = kTfLiteAffineQuantization;" << '\n';
 			std::cout << "  " << prefix << "tensors[" << i << "].quantization.params = (void*)&" 
-				<< prefix << "quantization" << i << ";" << std::endl;
+				<< prefix << "quantization" << i << ";" << '\n';
 		}
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		if (mem_in(interpreter->node_and_registration(i).node.inputs, tflite_array, tflite_end)) {
 			std::cout << "  " << prefix << "nodes[" << i << "].inputs = (struct TfLiteIntArray*)(tflite_array + " << (((uint8_t const*)interpreter->node_and_registration(i).node.inputs) - tflite_array) << "); /* (";
 			for (int32_t j = 0; j < interpreter->node_and_registration(i).node.inputs->size; ++j) std::cout << interpreter->node_and_registration(i).node.inputs->data[j] << ',';
-			std::cout << ") */" << std::endl;
+			std::cout << ") */" << '\n';
 		}
 		if (mem_in(interpreter->node_and_registration(i).node.outputs, tflite_array, tflite_end)) {
 			std::cout << "  " << prefix << "nodes[" << i << "].outputs = (struct TfLiteIntArray*)(tflite_array + " << (((uint8_t const*)interpreter->node_and_registration(i).node.outputs) - tflite_array) << "); /* (";
 			for (int32_t j = 0; j < interpreter->node_and_registration(i).node.outputs->size; ++j) std::cout << interpreter->node_and_registration(i).node.outputs->data[j] << ',';
-			std::cout << ") */" << std::endl;
+			std::cout << ") */" << '\n';
 		}
 		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) {
-			std::cout << "  " << prefix << "nodes[" << i << "].builtin_data = (void*)&" << prefix << "opdata" << i << ";" << std::endl;
+			std::cout << "  " << prefix << "nodes[" << i << "].builtin_data = (void*)&" << prefix << "opdata" << i << ";" << '\n';
 		}
 	}
-	std::cout << "  " << prefix << "context.tensors_size = " << interpreter->tensors_size() << ";" << std::endl;
-	std::cout << "  " << prefix << "context.tensors = (TfLiteTensor*)" << prefix << "tensors;" << std::endl;
-	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = &AllocatePersistentBuffer;" << std::endl;
+	std::cout << "  " << prefix << "context.tensors_size = " << interpreter->tensors_size() << ";" << '\n';
+	std::cout << "  " << prefix << "context.tensors = (TfLiteTensor*)" << prefix << "tensors;" << '\n';
+	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = &AllocatePersistentBuffer;" << '\n';
 	// this code assumes that persistent allocations are made from the end (which is true for the current implementation)
 	std::cout << "  " << "next_allocation = tensor_arena + " << (arena_end-tensor_arena) << "; // = minimum size of the tensor arena\n";
 	std::cout << "  " << "TfLiteStatus status = kTfLiteOk;\n";
@@ -541,7 +541,7 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 			std::cout << "  " << prefix << "nodes[" << i << "].user_data = "
 				<< name.first
 				// TODO: Handle custom operators
-				<< "(&" << prefix << "context, (const char*)(" << prefix << "nodes[" << i << "].builtin_data), 0);" << std::endl;
+				<< "(&" << prefix << "context, (const char*)(" << prefix << "nodes[" << i << "].builtin_data), 0);" << '\n';
 		}
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
@@ -553,22 +553,22 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 				+ "->prepare))";
 			std::cout << "  status = " 
 				<< name.first
-				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << std::endl;
+				<< "(&" << prefix << "context, &" << prefix << "nodes[" << i << "]);" << '\n';
 			std::cout << "  assert(status==kTfLiteOk);\n";
 		}
 	}
-	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = nullptr;" << std::endl;
-	std::cout << '}' << std::endl;
-	std::cout << std::endl;
+	std::cout << "  " << prefix << "context.AllocatePersistentBuffer = nullptr;" << '\n';
+	std::cout << '}' << '\n';
+	std::cout << '\n';
 
 	// invoke function (calling Eval)
 	std::cout << "void " << prefix << "invoke(void const* (inputs[" << interpreter->inputs().size() 
-		<< "]), void * (outputs[" << interpreter->outputs().size() << "])) {" << std::endl;
+		<< "]), void * (outputs[" << interpreter->outputs().size() << "])) {" << '\n';
 	for (uint32_t i = 0; i < interpreter->inputs().size(); ++i) {
-		std::cout << "  " << prefix << "tensors[" << interpreter->inputs()[i] << "].data.raw_const = (const char*)(inputs[" << i << "]);" << std::endl;
+		std::cout << "  " << prefix << "tensors[" << interpreter->inputs()[i] << "].data.raw_const = (const char*)(inputs[" << i << "]);" << '\n';
 	}
 	for (uint32_t i = 0; i < interpreter->outputs().size(); ++i) {
-		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << std::endl;
+		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << '\n';
 	}
 	std::cout << "  " << "TfLiteStatus status = kTfLiteOk;\n";
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
@@ -588,5 +588,5 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		std::cout << "\n";
 		std::cout << "  assert(status==kTfLiteOk);\n";
 	}
-	std::cout << "}" << std::endl;
+	std::cout << "}" << '\n';
 }
