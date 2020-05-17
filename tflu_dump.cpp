@@ -369,11 +369,15 @@ void dump_tensor(char const* prefix, TfLiteTensor const& t, uint32_t tensor_numb
 	}
 }
 
-void dump_dimension(char const* prefix, TfLiteTensor const& t, uint32_t tensor_number) {
-	std::cout << "static const int " << prefix << "tensor_dimension" << tensor_number << "[" << (t.dims->size+1) << "] = { " << t.dims->data[0] << ",  ";
-	for (uint32_t i=0;i<t.dims->size;++i)
-		std::cout << t.dims->data[i] << ",";
+void dump_int_array(char const* prefix, char const* name, uint32_t tensor_number, TfLiteIntArray const& arr) {
+	std::cout << "static const int " << prefix << name << tensor_number << "[" << (arr.size+1) << "] = { " << arr.size << ",  ";
+	for (uint32_t i=0;i<arr.size;++i)
+		std::cout << arr.data[i] << ",";
 	std::cout << " };\n";
+}
+
+void dump_dimension(char const* prefix, TfLiteTensor const& t, uint32_t tensor_number) {
+	dump_int_array(prefix, "tensor_dimension", tensor_number, *t.dims);
 }
 #endif
 
@@ -411,12 +415,19 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << "static TfLiteNode " << prefix << "nodes[" << interpreter->operators_size() << "];" << '\n';
 	std::cout << "static TfLiteContext " << prefix << "context;" << '\n';
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
-		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) {
+#ifndef EMBED_TENSORS // for embed tensors this is unconditional
+		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) 
+#endif
+		{
 			dump_builtin(tflite::BuiltinOperator(interpreter->node_and_registration(i).registration->builtin_code), 
 				interpreter->node_and_registration(i).node.builtin_data, 
 				std::string(prefix) + "opdata" + std::to_string(i),
 				model->subgraphs()[0][0]);
 		}
+#ifdef EMBED_TENSORS
+		dump_int_array(prefix, "inputs", i, *interpreter->node_and_registration(i).node.inputs);
+		dump_int_array(prefix, "outputs", i, *interpreter->node_and_registration(i).node.outputs);
+#endif
 	}
 	std::cout << '\n';
 	// quantization parameters
@@ -509,6 +520,10 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		}
 	}
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
+#ifdef EMBED_TENSORS
+		std::cout << "  " << prefix << "nodes[" << i << "].inputs = (struct TfLiteIntArray*)" << prefix << "inputs" << i << ";\n";
+		std::cout << "  " << prefix << "nodes[" << i << "].outputs = (struct TfLiteIntArray*)" << prefix << "outputs" << i << ";\n";
+#else
 		if (mem_in(interpreter->node_and_registration(i).node.inputs, tflite_array, tflite_end)) {
 			std::cout << "  " << prefix << "nodes[" << i << "].inputs = (struct TfLiteIntArray*)(tflite_array + " << (((uint8_t const*)interpreter->node_and_registration(i).node.inputs) - tflite_array) << "); /* (";
 			for (int32_t j = 0; j < interpreter->node_and_registration(i).node.inputs->size; ++j) std::cout << interpreter->node_and_registration(i).node.inputs->data[j] << ',';
@@ -519,7 +534,9 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 			for (int32_t j = 0; j < interpreter->node_and_registration(i).node.outputs->size; ++j) std::cout << interpreter->node_and_registration(i).node.outputs->data[j] << ',';
 			std::cout << ") */" << '\n';
 		}
-		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) {
+		if (mem_in(interpreter->node_and_registration(i).node.builtin_data, tensor_arena, arena_end)) 
+#endif
+		{
 			std::cout << "  " << prefix << "nodes[" << i << "].builtin_data = (void*)&" << prefix << "opdata" << i << ";" << '\n';
 		}
 	}
@@ -588,5 +605,5 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 		std::cout << "\n";
 		std::cout << "  assert(status==kTfLiteOk);\n";
 	}
-	std::cout << "}" << '\n';
+	std::cout << "}" << std::endl; // flush intentional
 }
