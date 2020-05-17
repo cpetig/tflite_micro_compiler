@@ -31,7 +31,7 @@ USAGE:
     please note that this arena is also used for storing precalculated vales in the prepare stage
     simply re-run init if you disturb the values inside
 
-- for a quick view into the generated code see https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cc
+- for a quick view into the generated code see https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cpp
 
 - The example directory contains a collection of traditional tflite micro and compiled versions:
 
