@@ -31,12 +31,19 @@ USAGE:
     please note that this arena is also used for storing precalculated vales in the prepare stage
     simply re-run init if you disturb the values inside
 
-- for a quick view into the generated code see https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/cifar10_compiled.cc
+- for a quick view into the generated code see https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cc
 
 - The example directory contains a collection of traditional tflite micro and compiled versions:
 
   - hello_world: Standard tflite micro example
   - cifar10: Computer vision CNN example
+
+Customization:
+
+You can decide whether to compile in the original tflite file or dump tensors and metadata into the compiled code:
+Simply change EMBED_TENSORS in compiler_config.h
+
+This is motivated by avoiding large binary blobs in source code (qualification) but introduces a slight rounding error. It also saves some additional bytes.
 
 Limitations:
 

@@ -19,7 +19,7 @@ mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o
 hello_world: hello_world.o hello_world_model.o
 	$(CXX) -o $@ $^ ${LIBS}
 
-hello_world_compiled: hello_world2.o hello_world_model.o compiled_hello.o
+hello_world_compiled: hello_world2.o compiled_hello.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 hello_world_model.o: ${TF_DIR}/tensorflow/lite/micro/examples/hello_world/model.cc
@@ -28,7 +28,7 @@ hello_world_model.o: ${TF_DIR}/tensorflow/lite/micro/examples/hello_world/model.
 cifar10: cifar10_model.o truck.o cifar10.o
 	$(CXX) -o $@ $^ ${LIBS}
 
-cifar10_compiled: cifar10_model.o truck.o cifar10_compiled.o cifar10_run_comp.o
+cifar10_compiled: truck.o cifar10_compiled.o cifar10_run_comp.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 regenerate: ../compiler

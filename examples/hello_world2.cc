@@ -18,17 +18,17 @@ limitations under the License.
 static const int tensor_arena_size = 6 * 1024;
 static uint8_t tensor_arena[tensor_arena_size];
 
-extern const unsigned char g_model[];
-extern const int g_model_len;
+// extern const unsigned char g_model[];
+// extern const int g_model_len;
 
-extern void hello_init(uint8_t const*tflite_array, uint8_t const*tensor_arena);
+extern void hello_init(/*uint8_t const*tflite_array,*/ uint8_t *tensor_arena);
 extern void hello_invoke(void const* (inputs[1]), void * (outputs[1]));
 
 void test_compiled(void) {
 	float in = 1.57f, out = 0.0f;
 	void const* in_array[1]= {&in};
 	void* out_array[1]= {&out};
-	hello_init(g_model, tensor_arena);
+	hello_init(/*g_model,*/ tensor_arena);
 	hello_invoke(in_array, out_array);
 	std::cerr << "compiled result " << out << std::endl;
 }
