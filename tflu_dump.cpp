@@ -290,9 +290,11 @@ static void declare_function(const void* ptr, tflite::BuiltinOperator op,
 }
 
 #ifdef EMBED_TENSORS
-template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor const& t, char const* tname, uint32_t tensor_number) {
+// outputting int8_t as a character is not what we intend here, we want to see the value, so we introduce printT
+template <class T, class printT> 
+void dump_tensor_contents(char const* prefix, TfLiteTensor const& t, char const* tname, uint32_t tensor_number) {
 	if (t.dims->size==0) { // special case 0 dimensions, we output an array to avoid distinction from >0 dimension at every use
-		std::cout << "static const " << tname << " " << prefix << "tensor_data" << tensor_number << "[1] = { " << (tflite::GetTensorData<T>(&t)[0]) << " };\n";
+		std::cout << "static const " << tname << " " << prefix << "tensor_data" << tensor_number << "[1] = { " << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
 		return;
 	}
 	std::cout << "static const " << tname << " " << prefix << "tensor_data" << tensor_number << "[" << t.dims->data[0];
@@ -301,7 +303,7 @@ template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor co
 	if (t.dims->size==1) // one dimension: Single line of data
 	{
 		for (uint32_t i=0;i<t.dims->data[0];++i)
-			std::cout << tflite::GetTensorData<T>(&t)[i] << ", ";
+			std::cout << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
 		std::cout << " };\n";
 	}
 	else if (t.dims->size==2) // two dimensions: Inner dimension is one line
@@ -309,7 +311,7 @@ template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor co
 		for (uint32_t i=0;i<t.dims->data[0];++i) {
 			std::cout << "\n  ";
 			for (uint32_t j=0;j<t.dims->data[1];++j)
-				std::cout << tflite::GetTensorData<T>(&t)[i*t.dims->data[1] + j] << ", ";
+				std::cout << (printT)(tflite::GetTensorData<T>(&t)[i*t.dims->data[1] + j]) << ", ";
 		}
 		std::cout << "\n};\n";
 	}
@@ -337,7 +339,7 @@ template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor co
 			std::cout << "\n  /* " << indexstr << " */ ";
 			for (uint32_t j=0;j<middle_dim;++j) {
 				for (uint32_t k=0;k<inner_dim;++k)
-					std::cout << tflite::GetTensorData<T>(&t)[(i*middle_dim + j)*inner_dim + k] << ",";
+					std::cout << (printT)(tflite::GetTensorData<T>(&t)[(i*middle_dim + j)*inner_dim + k]) << ",";
 				std::cout << " "; // separator between middle indices
 			}
 		}
@@ -345,24 +347,24 @@ template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor co
 	}
 }
 
-#define DUMP_TENSOR2(TfType, CType) case TfType: dump_tensor_contents<CType>(prefix, t, #CType, tensor_number); break
+#define DUMP_TENSOR2(TfType, CType, PrintType) case TfType: dump_tensor_contents<CType,PrintType>(prefix, t, #CType, tensor_number); break
 void dump_tensor(char const* prefix, TfLiteTensor const& t, uint32_t tensor_number) {
 	switch (t.type) {
-		DUMP_TENSOR2(kTfLiteFloat32, float);
-		DUMP_TENSOR2(kTfLiteInt32, int32_t);
-		DUMP_TENSOR2(kTfLiteUInt8, uint8_t);
-		DUMP_TENSOR2(kTfLiteInt64, int64_t);
+		DUMP_TENSOR2(kTfLiteFloat32, float, float);
+		DUMP_TENSOR2(kTfLiteInt32, int32_t, int32_t);
+		DUMP_TENSOR2(kTfLiteUInt8, uint8_t, int32_t);
+		DUMP_TENSOR2(kTfLiteInt64, int64_t, int64_t);
 		//DUMP_TENSOR2(kTfLiteString);
 		//DUMP_TENSOR2(kTfLiteBool, bool);
-		DUMP_TENSOR2(kTfLiteInt16, int16_t);
+		DUMP_TENSOR2(kTfLiteInt16, int16_t, int16_t);
 		//DUMP_TENSOR2(kTfLiteComplex64);
-		DUMP_TENSOR2(kTfLiteInt8, int8_t);
+		DUMP_TENSOR2(kTfLiteInt8, int8_t, int32_t);
 		//DUMP_TENSOR2(kTfLiteFloat16);
-		DUMP_TENSOR2(kTfLiteFloat64, double);
+		DUMP_TENSOR2(kTfLiteFloat64, double, double);
 		default: {
 			std::cout << "static const uint8_t " << prefix << "tensor_data" << tensor_number << "[" << t.bytes << "] = { ";
 			for (uint32_t i=0;i<t.bytes;++i)
-				std::cout << t.data.raw_const[i] << ",";
+				std::cout << int((uint8_t)t.data.raw_const[i]) << ",";
 			std::cout << " };\n";
 		} 
 		break;
