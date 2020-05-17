@@ -18,11 +18,11 @@ limitations under the License.
 static const int tensor_arena_size = 150 * 1024;
 static uint8_t tensor_arena[tensor_arena_size];
 
-extern "C" const unsigned char cifar10_tflite[];
-extern "C" const int cifar10_tflite_len;
+// extern "C" const unsigned char cifar10_tflite[];
+// extern "C" const int cifar10_tflite_len;
 extern "C" const unsigned char truck[];
 
-extern void cifar_init(uint8_t const*tflite_array, uint8_t *tensor_arena);
+extern void cifar_init(/*uint8_t const*tflite_array,*/ uint8_t *tensor_arena);
 extern void cifar_invoke(void const* (inputs[1]), void * (outputs[1]));
 
 void test_compiled(void) {
@@ -31,7 +31,7 @@ void test_compiled(void) {
 	float out[10];
 	void const* in_array[1]= {&in};
 	void* out_array[1]= {&out};
-	cifar_init(cifar10_tflite, tensor_arena);
+	cifar_init(/*cifar10_tflite,*/ tensor_arena);
 	cifar_invoke(in_array, out_array);
 	for (uint32_t i=0;i<10;++i)
 		std::cerr << out[i] << ", ";
