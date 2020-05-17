@@ -292,10 +292,10 @@ static void declare_function(const void* ptr, tflite::BuiltinOperator op,
 #ifdef EMBED_TENSORS
 template <class T> void dump_tensor_contents(char const* prefix, TfLiteTensor const& t, char const* tname, uint32_t tensor_number) {
 	if (t.dims->size==0) { // special case 0 dimensions, we output an array to avoid distinction from >0 dimension at every use
-		std::cout << "static const " << tname << " tensor_data" << tensor_number << "[1] = { " << (tflite::GetTensorData<T>(&t)[0]) << " };\n";
+		std::cout << "static const " << tname << " " << prefix << "tensor_data" << tensor_number << "[1] = { " << (tflite::GetTensorData<T>(&t)[0]) << " };\n";
 		return;
 	}
-	std::cout << "static const " << tname << " tensor_data" << tensor_number << "[" << t.dims->data[0];
+	std::cout << "static const " << tname << " " << prefix << "tensor_data" << tensor_number << "[" << t.dims->data[0];
 	for (uint32_t i=1;i<t.dims->size;++i) std::cout << '*' << t.dims->data[i];
 	std::cout << "] = { ";
 	if (t.dims->size==1) // one dimension: Single line of data
@@ -359,8 +359,21 @@ void dump_tensor(char const* prefix, TfLiteTensor const& t, uint32_t tensor_numb
 		DUMP_TENSOR2(kTfLiteInt8, int8_t);
 		//DUMP_TENSOR2(kTfLiteFloat16);
 		DUMP_TENSOR2(kTfLiteFloat64, double);
-		default: break;
+		default: {
+			std::cout << "static const uint8_t " << prefix << "tensor_data" << tensor_number << "[" << t.bytes << "] = { ";
+			for (uint32_t i=0;i<t.bytes;++i)
+				std::cout << t.data.raw_const[i] << ",";
+			std::cout << " };\n";
+		} 
+		break;
 	}
+}
+
+void dump_dimension(char const* prefix, TfLiteTensor const& t, uint32_t tensor_number) {
+	std::cout << "static const int " << prefix << "tensor_dimension" << tensor_number << "[" << (t.dims->size+1) << "] = { " << t.dims->data[0] << ",  ";
+	for (uint32_t i=0;i<t.dims->size;++i)
+		std::cout << t.dims->data[i] << ",";
+	std::cout << " };\n";
 }
 #endif
 
@@ -405,12 +418,14 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 				model->subgraphs()[0][0]);
 		}
 	}
+	std::cout << '\n';
 	// quantization parameters
 	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
 		TfLiteTensor const* t = interpreter->tensor(i);
 #ifdef EMBED_TENSORS
 		if (t->allocation_type == kTfLiteMmapRo)
 			dump_tensor(prefix, *t, i);
+		dump_dimension(prefix, *t, i);
 #endif
 		if (t->quantization.type == kTfLiteAffineQuantization) {
 			TfLiteAffineQuantization const* q = (TfLiteAffineQuantization const*)t->quantization.params;
@@ -446,26 +461,41 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << std::endl;
 
 	// init function (setting up tensors+node, call Init and Prepare)
-	std::cout << "void " << prefix << "init(uint8_t const*tflite_array, uint8_t* tensor_arena) {" << std::endl;
+	std::cout << "void " << prefix << "init(" 
+#ifndef EMBED_TENSORS // this argument is only needed if the tensors aren't dumped into the generated file
+				<< "uint8_t const*tflite_array, " 
+#endif
+				<< "uint8_t* tensor_arena) {" << std::endl;
 	for (uint32_t i = 0; i < interpreter->tensors_size(); ++i) {
 		TfLiteTensor const* t = interpreter->tensor(i);
 		std::cout << "  " << prefix << "tensors[" << i << "].type = " << to_string(t->type) << ';' << std::endl;
 		std::cout << "  " << prefix << "tensors[" << i << "].allocation_type = " << to_string(t->allocation_type) << ';' << std::endl;
 		std::cout << "  " << prefix << "tensors[" << i << "].bytes = " << t->bytes << ';' << std::endl;
+#ifndef EMBED_TENSORS
 		if (mem_in(t->name, tflite_array, tflite_end)) {
 			std::cout << "  " << prefix << "tensors[" << i << "].name = (char*)(tflite_array + " << (((uint8_t const*)t->name) - tflite_array)
 				<< "); /* " << t->name << " */" << std::endl;
 		}
-		else {
+		else 
+#endif
+		{
 			std::cout << "  " << prefix << "tensors[" << i << "].name = (char*)\"" << t->name << "\";" << std::endl;
 		}
 		if (mem_in(t->dims, tflite_array, tflite_end)) {
+#ifdef EMBED_TENSORS
+			std::cout << "  " << prefix << "tensors[" << i << "].dims = (struct TfLiteIntArray*)" << prefix << "tensor_dimension" << i << ";\n";
+#else
 			std::cout << "  " << prefix << "tensors[" << i << "].dims = (struct TfLiteIntArray*)(tflite_array + " << (((uint8_t const*)t->dims) - tflite_array) << "); /* (";
 			for (int32_t j = 0; j < t->dims->size; ++j) std::cout << t->dims->data[j] << ',';
 			std::cout << ") */" << std::endl;
+#endif
 		}
 		if (mem_in(t->data.raw_const, tflite_array, tflite_end))
+#ifdef EMBED_TENSORS
+			std::cout << "  " << prefix << "tensors[" << i << "].data.raw_const = (const char*)" << prefix << "tensor_data" << i << ";\n";
+#else
 			std::cout << "  " << prefix << "tensors[" << i << "].data.raw_const = (const char*)(tflite_array + " << (((uint8_t const*)t->data.raw_const) - tflite_array) << ");" << std::endl;
+#endif
 		else if (mem_in(t->data.raw_const, tensor_arena, arena_end))
 			std::cout << "  " << prefix << "tensors[" << i << "].data.raw = (char*)(tensor_arena + " << (((uint8_t const*)t->data.raw_const) - tensor_arena) << ");" << std::endl;
 		if (t->params.scale!=0.0f) {
