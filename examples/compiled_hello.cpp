@@ -276,9 +276,9 @@ void hello_init(uint8_t* tensor_arena) {
   hello_context.AllocatePersistentBuffer = nullptr;
 }
 
-void hello_invoke(void const* (inputs[1]), void * (outputs[1])) {
-  hello_tensors[10].data.raw_const = (const char*)(inputs[0]);
-  hello_tensors[11].data.raw = (char*)(outputs[0]);
+void hello_invoke(float const*input, float* output) {
+  hello_tensors[10].data.raw_const = (const char*)input;
+  hello_tensors[11].data.raw = (char*)output;
   TfLiteStatus status = kTfLiteOk;
   status = tflite::ops::micro::quantize::Eval(&hello_context, &hello_nodes[0]); // Input 10, Output 1,
   assert(status==kTfLiteOk);

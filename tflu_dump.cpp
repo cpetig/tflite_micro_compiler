@@ -78,6 +78,22 @@ static std::string to_string(TfLiteType t){
 	default: return "TfLiteType(" + std::to_string((int)t) + ")";
 	}
 }
+std::string c_type(TfLiteType t){
+	switch (t) {
+	case kTfLiteFloat32: return "float";
+	case kTfLiteInt32: return "int32_t";
+	case kTfLiteUInt8: return "uint8_t";
+	case kTfLiteInt64: return "int64_t";
+	//case kTfLiteString: return "float";
+	//case kTfLiteBool: return "float";
+	case kTfLiteInt16: return "int16_t";
+	//case kTfLiteComplex64: return "float";
+	case kTfLiteInt8: return "int8_t";
+	//case kTfLiteFloat16: return "float";
+	case kTfLiteFloat64: return "double";
+	default: return "void";
+	}
+}
 static std::string to_string(TfLiteAllocationType t){
 	switch (t) {
 	NAME(kTfLiteMmapRo);
@@ -581,14 +597,62 @@ void dump_data(char const* prefix, tflite::MicroInterpreter *interpreter,
 	std::cout << '\n';
 
 	// invoke function (calling Eval)
-	std::cout << "void " << prefix << "invoke(void const* (inputs[" << interpreter->inputs().size() 
-		<< "]), void * (outputs[" << interpreter->outputs().size() << "])) {" << '\n';
-	for (uint32_t i = 0; i < interpreter->inputs().size(); ++i) {
-		std::cout << "  " << prefix << "tensors[" << interpreter->inputs()[i] << "].data.raw_const = (const char*)(inputs[" << i << "]);" << '\n';
+	//   figure out whether the input/output types are homogenic (then use a specific pointer type)
+	TfLiteType intype = interpreter->input(0)->type;
+	for (uint32 i=0;i<interpreter->inputs().size();++i)	{
+		if (interpreter->input(i)->type!=intype) {
+			intype=kTfLiteNoType;
+			break;
+		}
 	}
-	for (uint32_t i = 0; i < interpreter->outputs().size(); ++i) {
-		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << '\n';
+	TfLiteType outtype = interpreter->output(0)->type;
+	for (uint32 i=0;i<interpreter->outputs().size();++i)	{
+		if (interpreter->output(i)->type!=outtype) {
+			outtype=kTfLiteNoType;
+			break;
+		}
 	}
+	std::cout << "void " << prefix << "invoke(";
+	// some more magic to make the generated code more readable (with respect to the arguments to invoke)
+	if (interpreter->inputs().size()==1) {
+		if ((interpreter->input(0)->dims->size==0 || (interpreter->input(0)->dims->size==1 && interpreter->input(0)->dims->data[0]==1)) && c_type(intype)!="void")
+			std::cout << c_type(intype) << " input";
+		else
+			std::cout << c_type(intype) << " const*input";
+	}
+	else { // many inputs
+		std::cout << c_type(intype) << " const* (inputs[" << interpreter->inputs().size() 
+		<< "])";
+	}
+	std::cout << ", "; 
+	if (interpreter->outputs().size()==1) {
+		std::cout << c_type(outtype) << "* output";
+	}
+	else {
+		std::cout << c_type(outtype) << " * (outputs[" << interpreter->outputs().size() << "])";
+	}
+	std::cout << ") {" << '\n';
+	if (interpreter->inputs().size()==1) {
+		std::cout << "  " << prefix << "tensors[" << interpreter->inputs()[0] << "].data.raw_const = (const char*)";
+		if ((interpreter->input(0)->dims->size==0 || (interpreter->input(0)->dims->size==1 && interpreter->input(0)->dims->data[0]==1)) && c_type(intype)!="void")
+			std::cout << "&input";
+		else
+			std::cout << "input";
+		std::cout << ";\n";
+	}
+	else { // many inputs
+		for (uint32_t i = 0; i < interpreter->inputs().size(); ++i) {
+			std::cout << "  " << prefix << "tensors[" << interpreter->inputs()[i] << "].data.raw_const = (const char*)(inputs[" << i << "]);" << '\n';
+		}
+	}
+	if (interpreter->outputs().size()==1) {
+		std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[0] << "].data.raw = (char*)output;\n";
+	} else {
+		for (uint32_t i = 0; i < interpreter->outputs().size(); ++i) {
+			std::cout << "  " << prefix << "tensors[" << interpreter->outputs()[i] << "].data.raw = (char*)(outputs[" << i << "]);" << '\n';
+		}
+	}
+	// main invoke body
 	std::cout << "  " << "TfLiteStatus status = kTfLiteOk;\n";
 	for (uint32_t i = 0; i < interpreter->operators_size(); ++i) {
 		std::pair<std::string, bool> funname = function_name((const void*)(interpreter->node_and_registration(i).registration->invoke));

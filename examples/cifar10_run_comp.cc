@@ -23,16 +23,16 @@ static uint8_t tensor_arena[tensor_arena_size];
 extern "C" const unsigned char truck[];
 
 extern void cifar_init(/*uint8_t const*tflite_array,*/ uint8_t *tensor_arena);
-extern void cifar_invoke(void const* (inputs[1]), void * (outputs[1]));
+extern void cifar_invoke(float const* input, float * output);
 
 void test_compiled(void) {
 	float in[32*32*3];
 	for (uint32_t i=0;i<32*32*3;++i) in[i]=truck[i]/255.0f;
 	float out[10];
-	void const* in_array[1]= {&in};
-	void* out_array[1]= {&out};
+	// void const* in_array[1]= {&in};
+	// void* out_array[1]= {&out};
 	cifar_init(/*cifar10_tflite,*/ tensor_arena);
-	cifar_invoke(in_array, out_array);
+	cifar_invoke(in, out);
 	for (uint32_t i=0;i<10;++i)
 		std::cerr << out[i] << ", ";
 	std::cerr << std::endl;

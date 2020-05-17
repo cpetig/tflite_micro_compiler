@@ -22,14 +22,14 @@ static uint8_t tensor_arena[tensor_arena_size];
 // extern const int g_model_len;
 
 extern void hello_init(/*uint8_t const*tflite_array,*/ uint8_t *tensor_arena);
-extern void hello_invoke(void const* (inputs[1]), void * (outputs[1]));
+extern void hello_invoke(float const* input, float * output);
 
 void test_compiled(void) {
 	float in = 1.57f, out = 0.0f;
-	void const* in_array[1]= {&in};
-	void* out_array[1]= {&out};
+	// void const* in_array[1]= {&in};
+	// void* out_array[1]= {&out};
 	hello_init(/*g_model,*/ tensor_arena);
-	hello_invoke(in_array, out_array);
+	hello_invoke(&in, &out);
 	std::cerr << "compiled result " << out << std::endl;
 }
 

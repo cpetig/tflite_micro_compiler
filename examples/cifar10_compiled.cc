@@ -810,9 +810,9 @@ void cifar_init(uint8_t* tensor_arena) {
   cifar_context.AllocatePersistentBuffer = nullptr;
 }
 
-void cifar_invoke(void const* (inputs[1]), void * (outputs[1])) {
-  cifar_tensors[0].data.raw_const = (const char*)(inputs[0]);
-  cifar_tensors[19].data.raw = (char*)(outputs[0]);
+void cifar_invoke(float const*input, float* output) {
+  cifar_tensors[0].data.raw_const = (const char*)input;
+  cifar_tensors[19].data.raw = (char*)output;
   TfLiteStatus status = kTfLiteOk;
   status = tflite::ops::micro::conv::Eval(&cifar_context, &cifar_nodes[0]); // Input 0,9,1, Output 12,
   assert(status==kTfLiteOk);
