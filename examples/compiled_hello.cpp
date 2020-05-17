@@ -18,28 +18,28 @@ static TfLiteTensor hello_tensors[12];
 static TfLiteNode hello_nodes[5];
 static TfLiteContext hello_context;
 static const uint8_t hello_opdata0[0] = {  }; /* op type 114 */
-static const int hello_inputs0[2] = { 1,  10, };
-static const int hello_outputs0[2] = { 1,  1, };
+static const int hello_inputs0[2] = { 1,  10 };
+static const int hello_outputs0[2] = { 1,  1 };
 static const TfLiteFullyConnectedParams hello_opdata1 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
-static const int hello_inputs1[4] = { 3,  1,2,3, };
-static const int hello_outputs1[2] = { 1,  4, };
+static const int hello_inputs1[4] = { 3,  1,2,3 };
+static const int hello_outputs1[2] = { 1,  4 };
 static const TfLiteFullyConnectedParams hello_opdata2 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
-static const int hello_inputs2[4] = { 3,  4,5,6, };
-static const int hello_outputs2[2] = { 1,  7, };
+static const int hello_inputs2[4] = { 3,  4,5,6 };
+static const int hello_outputs2[2] = { 1,  7 };
 static const TfLiteFullyConnectedParams hello_opdata3 = { kTfLiteActNone, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
-static const int hello_inputs3[4] = { 3,  7,8,9, };
-static const int hello_outputs3[2] = { 1,  0, };
+static const int hello_inputs3[4] = { 3,  7,8,9 };
+static const int hello_outputs3[2] = { 1,  0 };
 static const uint8_t hello_opdata4[0] = {  }; /* op type 6 */
-static const int hello_inputs4[2] = { 1,  0, };
-static const int hello_outputs4[2] = { 1,  11, };
+static const int hello_inputs4[2] = { 1,  0 };
+static const int hello_outputs4[2] = { 1,  11 };
 
-static const int hello_tensor_dimension0[3] = { 2,  1,1, };
+static const int hello_tensor_dimension0[3] = { 2,  1,1 };
 static const struct { int sz; float elem[1]; } hello_quant_scale0 = { 1, { 0.0084758, } };
-static const int hello_quant_zero0[2] = { 1, 2, };
+static const int hello_quant_zero0[2] = { 1, 2};
 static const TfLiteAffineQuantization hello_quantization0 = { (TfLiteFloatArray*)&hello_quant_scale0, (TfLiteIntArray*)&hello_quant_zero0, 0 };
-static const int hello_tensor_dimension1[3] = { 2,  1,1, };
+static const int hello_tensor_dimension1[3] = { 2,  1,1 };
 static const struct { int sz; float elem[1]; } hello_quant_scale1 = { 1, { 0.024574, } };
-static const int hello_quant_zero1[2] = { 1, -128, };
+static const int hello_quant_zero1[2] = { 1, -128};
 static const TfLiteAffineQuantization hello_quantization1 = { (TfLiteFloatArray*)&hello_quant_scale1, (TfLiteIntArray*)&hello_quant_zero1, 0 };
 static const int8_t hello_tensor_data2[16*1] = { 
   115, 
@@ -59,18 +59,18 @@ static const int8_t hello_tensor_data2[16*1] = {
   25, 
   -33, 
 };
-static const int hello_tensor_dimension2[3] = { 2,  16,1, };
+static const int hello_tensor_dimension2[3] = { 2,  16,1 };
 static const struct { int sz; float elem[1]; } hello_quant_scale2 = { 1, { 0.00422428, } };
-static const int hello_quant_zero2[2] = { 1, 0, };
+static const int hello_quant_zero2[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization2 = { (TfLiteFloatArray*)&hello_quant_scale2, (TfLiteIntArray*)&hello_quant_zero2, 0 };
 static const int32_t hello_tensor_data3[16] = { 1, 2897, -2489, 0, 3100, 0, 0, 1435, 0, 0, 8423, 0, 1938, -2828, -4011, 0,  };
-static const int hello_tensor_dimension3[2] = { 1,  16, };
+static const int hello_tensor_dimension3[2] = { 1,  16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale3 = { 1, { 0.000103807, } };
-static const int hello_quant_zero3[2] = { 1, 0, };
+static const int hello_quant_zero3[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization3 = { (TfLiteFloatArray*)&hello_quant_scale3, (TfLiteIntArray*)&hello_quant_zero3, 0 };
-static const int hello_tensor_dimension4[3] = { 2,  1,16, };
+static const int hello_tensor_dimension4[3] = { 2,  1,16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale4 = { 1, { 0.0119366, } };
-static const int hello_quant_zero4[2] = { 1, -128, };
+static const int hello_quant_zero4[2] = { 1, -128};
 static const TfLiteAffineQuantization hello_quantization4 = { (TfLiteFloatArray*)&hello_quant_scale4, (TfLiteIntArray*)&hello_quant_zero4, 0 };
 static const int8_t hello_tensor_data5[16*16] = { 
   -18, -4, 0, -20, 5, 22, -17, -20, -26, -8, 3, 1, 0, -6, -8, -11, 
@@ -90,33 +90,33 @@ static const int8_t hello_tensor_data5[16*16] = {
   13, -15, 10, 25, 26, -6, -32, 24, 30, 19, 55, 28, 18, -20, 58, 12, 
   -74, -53, -26, 19, -9, -21, -15, 5, 27, -6, 25, -27, -20, -49, 12, -12, 
 };
-static const int hello_tensor_dimension5[3] = { 2,  16,16, };
+static const int hello_tensor_dimension5[3] = { 2,  16,16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale5 = { 1, { 0.0127847, } };
-static const int hello_quant_zero5[2] = { 1, 0, };
+static const int hello_quant_zero5[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization5 = { (TfLiteFloatArray*)&hello_quant_scale5, (TfLiteIntArray*)&hello_quant_zero5, 0 };
 static const int32_t hello_tensor_data6[16] = { 0, 1276, 2719, 1637, -1987, 0, 2795, -2001, 1256, 2593, -442, 1224, 0, -2141, -1752, 1434,  };
-static const int hello_tensor_dimension6[2] = { 1,  16, };
+static const int hello_tensor_dimension6[2] = { 1,  16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale6 = { 1, { 0.000152606, } };
-static const int hello_quant_zero6[2] = { 1, 0, };
+static const int hello_quant_zero6[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization6 = { (TfLiteFloatArray*)&hello_quant_scale6, (TfLiteIntArray*)&hello_quant_zero6, 0 };
-static const int hello_tensor_dimension7[3] = { 2,  1,16, };
+static const int hello_tensor_dimension7[3] = { 2,  1,16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale7 = { 1, { 0.00581308, } };
-static const int hello_quant_zero7[2] = { 1, -128, };
+static const int hello_quant_zero7[2] = { 1, -128};
 static const TfLiteAffineQuantization hello_quantization7 = { (TfLiteFloatArray*)&hello_quant_scale7, (TfLiteIntArray*)&hello_quant_zero7, 0 };
 static const int8_t hello_tensor_data8[1*16] = { 
   33, -94, -116, -55, 95, 29, -50, 65, -97, -51, 32, -79, -33, 83, 47, -127, 
 };
-static const int hello_tensor_dimension8[3] = { 2,  1,16, };
+static const int hello_tensor_dimension8[3] = { 2,  1,16 };
 static const struct { int sz; float elem[1]; } hello_quant_scale8 = { 1, { 0.00849693, } };
-static const int hello_quant_zero8[2] = { 1, 0, };
+static const int hello_quant_zero8[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization8 = { (TfLiteFloatArray*)&hello_quant_scale8, (TfLiteIntArray*)&hello_quant_zero8, 0 };
 static const int32_t hello_tensor_data9[1] = { -4382,  };
-static const int hello_tensor_dimension9[2] = { 1,  1, };
+static const int hello_tensor_dimension9[2] = { 1,  1 };
 static const struct { int sz; float elem[1]; } hello_quant_scale9 = { 1, { 4.93934e-05, } };
-static const int hello_quant_zero9[2] = { 1, 0, };
+static const int hello_quant_zero9[2] = { 1, 0};
 static const TfLiteAffineQuantization hello_quantization9 = { (TfLiteFloatArray*)&hello_quant_scale9, (TfLiteIntArray*)&hello_quant_zero9, 0 };
-static const int hello_tensor_dimension10[3] = { 2,  1,1, };
-static const int hello_tensor_dimension11[3] = { 2,  1,1, };
+static const int hello_tensor_dimension10[3] = { 2,  1,1 };
+static const int hello_tensor_dimension11[3] = { 2,  1,1 };
 
 static uint8_t* next_allocation = nullptr;
 static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx, size_t bytes, void** ptr) {
@@ -277,17 +277,17 @@ void hello_init(uint8_t* tensor_arena) {
 }
 
 void hello_invoke(float const*input, float* output) {
-  hello_tensors[10].data.raw_const = (const char*)input;
-  hello_tensors[11].data.raw = (char*)output;
+  hello_tensors[10].data.raw_const = (const char*)input; // (1,1)
+  hello_tensors[11].data.raw = (char*)output; // (1,1)
   TfLiteStatus status = kTfLiteOk;
-  status = tflite::ops::micro::quantize::Eval(&hello_context, &hello_nodes[0]); // Input 10, Output 1,
+  status = tflite::ops::micro::quantize::Eval(&hello_context, &hello_nodes[0]); // Input 10 Output 1
   assert(status==kTfLiteOk);
-  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[1]); // Input 1,2,3, Output 4,
+  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[1]); // Input 1,2,3 Output 4
   assert(status==kTfLiteOk);
-  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[2]); // Input 4,5,6, Output 7,
+  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[2]); // Input 4,5,6 Output 7
   assert(status==kTfLiteOk);
-  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[3]); // Input 7,8,9, Output 0,
+  status = tflite::ops::micro::fully_connected::Eval(&hello_context, &hello_nodes[3]); // Input 7,8,9 Output 0
   assert(status==kTfLiteOk);
-  status = tflite::ops::micro::dequantize::Eval(&hello_context, &hello_nodes[4]); // Input 0, Output 11,
+  status = tflite::ops::micro::dequantize::Eval(&hello_context, &hello_nodes[4]); // Input 0 Output 11
   assert(status==kTfLiteOk);
 }
