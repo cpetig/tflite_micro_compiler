@@ -6,8 +6,7 @@ SET(TFL_SRC ${TF_DIR}/tensorflow/lite)
 SET(TFLM_SRC ${TFL_SRC}/micro)
 SET(TFLMD_SRC ${TFLM_SRC}/tools/make/downloads)
 
-ADD_EXECUTABLE(${PROJECT_NAME}
-    compiler.cc
+ADD_LIBRARY(${PROJECT_NAME} STATIC
     tflu_dump.cpp
     fake_implementations.cpp
 )
@@ -25,3 +24,8 @@ TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC
     TF_LITE_STATIC_MEMORY
     TF_LITE_DISABLE_X86_NEON
 )
+
+ADD_EXECUTABLE(compiler compiler.cc)
+TARGET_LINK_LIBRARIES(compiler PUBLIC ${PROJECT_NAME})
+
+ADD_SUBDIRECTORY(examples)
