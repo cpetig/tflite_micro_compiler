@@ -80,6 +80,7 @@ static std::string to_string(TfLiteType t) {
     NAME(kTfLiteFloat16);
     NAME(kTfLiteFloat64);
     default:
+      std::cerr << "Warning: missing case in TfLiteType to string conversion\n";
       return "TfLiteType(" + std::to_string((int)t) + ")";
   }
 }
@@ -104,6 +105,7 @@ std::string c_type(TfLiteType t) {
     case kTfLiteFloat64:
       return "double";
     default:
+      std::cerr << "Warning: missing case in TfLiteType to C type conversion";
       return "void";
   }
 }
@@ -112,6 +114,8 @@ static std::string to_string(TfLiteAllocationType t) {
     NAME(kTfLiteMmapRo);
     NAME(kTfLiteArenaRw);
     default:
+      std::cerr << "Warning: missing case in TfLiteAllocationType to string "
+                   "conversion";
       return "TfLiteAllocationType(" + std::to_string((int)t) + ")";
   }
 }
@@ -125,6 +129,8 @@ static std::string to_string(TfLiteFusedActivation t) {
     NAME(kTfLiteActSignBit);
     NAME(kTfLiteActSigmoid);
     default:
+      std::cerr << "Warning: missing case in TfLiteFusedActivation to string "
+                   "conversion";
       return "TfLiteFusedActivation(" + std::to_string((int)t) + ")";
   }
 }
@@ -133,6 +139,8 @@ static std::string to_string(TfLiteFullyConnectedWeightsFormat t) {
     NAME(kTfLiteFullyConnectedWeightsFormatDefault);
     NAME(kTfLiteFullyConnectedWeightsFormatShuffled4x16Int8);
     default:
+      std::cerr << "Warning: missing case in TfLiteFullyConnectedWeightsFormat "
+                   "to string conversion";
       return "TfLiteFullyConnectedWeightsFormat(" + std::to_string((int)t) +
              ")";
   }
@@ -150,6 +158,8 @@ static std::string to_string(TfLitePadding t) {
     NAME(kTfLitePaddingSame);
     NAME(kTfLitePaddingValid);
     default:
+      std::cerr
+          << "Warning: missing case in TfLitePadding to string conversion";
       return "TfLitePadding(" + std::to_string((int)t) + ")";
   }
 }
