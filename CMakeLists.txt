@@ -9,6 +9,9 @@ SET(TFLMD_SRC ${TFLM_SRC}/tools/make/downloads)
 ADD_LIBRARY(${PROJECT_NAME} STATIC
     tflu_dump.cpp
     fake_implementations.cpp
+    src/CodeWriter.cpp
+    src/Compiler.cpp
+    src/TypeToString.cpp
 )
 
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
@@ -27,5 +30,8 @@ TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC
 
 ADD_EXECUTABLE(compiler compiler.cc)
 TARGET_LINK_LIBRARIES(compiler PUBLIC ${PROJECT_NAME})
+
+ADD_EXECUTABLE(compiler2 src/main.cpp)
+TARGET_LINK_LIBRARIES(compiler2 PUBLIC ${PROJECT_NAME})
 
 ADD_SUBDIRECTORY(examples)
