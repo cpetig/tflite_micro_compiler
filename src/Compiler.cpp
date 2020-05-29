@@ -271,6 +271,12 @@ const void *)"
      << outputTensorIndex_ << R"(].data.data;
 }
 
+size_t )"
+     << prefix_ << R"(output_size() {
+  return g_ctx.tensors[)"
+     << outputTensorIndex_ << R"(].bytes;
+}
+
 void )"
      << prefix_ << R"(invoke() {
   TfLiteStatus status = kTfLiteOk;
