@@ -14,8 +14,23 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: requirements
-      run: cd .. && git clone https://github.com/tensorflow/tensorflow.git && cd tensorflow && make -f tensorflow/lite/micro/tools/make/Makefile hello_world_bin
+      run: |
+        cd ..
+        git clone https://github.com/tensorflow/tensorflow.git
+        cd tensorflow
+        make -f tensorflow/lite/micro/tools/make/Makefile hello_world_bin
     - name: configure
-      run: mkdir build && cd build && cmake ..
+      run: |
+        mkdir build
+        cd build
+        cmake ..
     - name: make
-      run: cd build && make
+      run: |
+        cd build
+        make
+    - name: run
+      run: |
+        cd build
+        wget https://storage.googleapis.com/download.tensorflow.org/models/tflite/micro/hello_world_2020_04_13.zip
+        unzip hello_world_2020_04_13.zip
+        ./compiler hello_world/models/model.tflite out.cpp
