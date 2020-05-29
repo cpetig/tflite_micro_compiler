@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: requirements
+      run: cd .. && git clone https://github.com/tensorflow/tensorflow.git
     - name: configure
       run: mkdir build && cd build && cmake ..
     - name: make
