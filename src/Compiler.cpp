@@ -108,6 +108,17 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back({*node, itOp - registrations_.begin()});
   }
 
+  // This includes:
+  // - Tensors
+  // - Scratch buffers
+  // - Persistent buffers
+  // - Temporary interpreter data (TODO: Remove this!)
+  // - Tensor metadata
+  // Subtract tensor metadata, since we add it back on target to account for ABI
+  // differences.
+  size_t usedBytes = interpreter_->arena_used_bytes();
+  arenaBufferSize_ = usedBytes - tensors_.size() * sizeof(TfLiteTensor);
+
   return true;
 }
 
@@ -191,9 +202,12 @@ void )"
        << i << ";\n";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << tensorI << "params.scale = " << t->params.scale << ";\n";
-      wr << tensorI << "params.zero_point" << t->params.zero_point << ";\n";
-      wr << tensorI << "quanization = {kTfLiteAffineQuantization, &" << prefix_
-         << "quant" << i << "};\n";
+      wr << tensorI << "params.zero_point = " << t->params.zero_point << ";\n";
+      // TODO: Is this cast safe or does the data need to be non-const?
+      wr << tensorI
+         << "quantization = {kTfLiteAffineQuantization, "
+            "const_cast<void*>(static_cast<const void*>(&"
+         << prefix_ << "quant" << i << "))};\n";
     }
   }
   wr << "\n";
