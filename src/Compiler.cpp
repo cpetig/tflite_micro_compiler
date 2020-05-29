@@ -166,6 +166,8 @@ TfLiteNode g_nodes[)"
     wr.writeIntArray(*node.inputs, prefix_ + "inputs" + std::to_string(i));
     wr.writeIntArray(*node.outputs, prefix_ + "outputs" + std::to_string(i));
   }
+  // TODO: This code assumes that persistent allocations are made from the end
+  // (which is true for the current implementation)
   wr << R"(
 static TfLiteStatus FakeAllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes, void** ptr) {
@@ -271,10 +273,12 @@ const void *)"
 
 void )"
      << prefix_ << R"(invoke() {
+  TfLiteStatus status = kTfLiteOk;
 )";
   for (size_t i = 0; i < nodes_.size(); i++) {
-    wr << "  g_registrations[" << nodes_[i].regIndex
+    wr << "  status = g_registrations[" << nodes_[i].regIndex
        << "]->invoke(&g_ctx, &g_nodes[" << i << "]);\n";
+    wr << "  assert(status == kTfLiteOk && \"Invoke failed\");\n";
   }
   wr << R"(}
 )";

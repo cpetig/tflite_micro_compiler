@@ -7,6 +7,7 @@
 
 namespace tflmc {
 
+// Helper functions for top-level code generation.
 class CodeWriter {
  public:
   CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph);
@@ -14,7 +15,9 @@ class CodeWriter {
   void writeBuiltin(tflite::BuiltinOperator op, const void *data,
                     const std::string &name);
 
+  // Write IntArray with variable declaration.
   void writeIntArray(const TfLiteIntArray &arr, const std::string &name);
+  // Write only the comma separated contents of an IntArray.
   void writeIntArrayData(const TfLiteIntArray &arr);
 
   void writeTensor(const TfLiteTensor &t, const std::string &name);
@@ -29,8 +32,6 @@ class CodeWriter {
 
  private:
   std::ostream &out_;
-  int indentLevel_ = 0;
-
   const tflite::SubGraph *subgraph_ = nullptr;
 };
 

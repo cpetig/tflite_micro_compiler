@@ -3,7 +3,7 @@
 Generate tflite micro code which bypasses the interpreter (directly calls into kernels)
 
 Basically this code uses a fully set up tflite micro instance to dump the internal allocations and
-function calls assigned to the model, then dumps the tensor and node settings into a compileable 
+function calls assigned to the model, then dumps the tensor and node settings into a compileable
 file, eliminating the need for running the interpreter at each program start and for resolving the correct
 kernel at run time.
 
@@ -38,14 +38,6 @@ USAGE:
   - hello_world: Standard tflite micro example
   - cifar10: Computer vision CNN example
 
-Customization:
-
-You can decide whether to compile in the original tflite file or dump tensors and metadata into the compiled code:
-Simply change EMBED_TENSORS in compiler_config.h
-
-This is motivated by avoiding large binary blobs in source code (qualification) but introduces a slight rounding error. It also saves some additional bytes.
-
 Limitations:
 
 - no support for big endian machines, yet
-- currently the compiler seems to crash but produces correct code (under investigation)
