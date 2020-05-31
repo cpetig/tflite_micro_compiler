@@ -14,22 +14,19 @@ limitations under the License.
 ==============================================================================*/
 
 #include <iostream>
+#include "tensorflow/lite/c/common.h"
+#include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 
-static const int tensor_arena_size = 6 * 1024;
-static uint8_t tensor_arena[tensor_arena_size];
-
-// extern const unsigned char g_model[];
-// extern const int g_model_len;
-
-extern void hello_init(/*uint8_t const*tflite_array,*/ uint8_t *tensor_arena);
-extern void hello_invoke(float const* input, float * output);
+extern void hello_init();
+extern void hello_invoke();
+extern TfLiteTensor* hello_input(int idx=0);
+extern TfLiteTensor* hello_output(int idx=0);
 
 void test_compiled(void) {
-	float in = 1.57f, out = 0.0f;
-	// void const* in_array[1]= {&in};
-	// void* out_array[1]= {&out};
-	hello_init(/*g_model,*/ tensor_arena);
-	hello_invoke(&in, &out);
+	hello_init();
+	tflite::GetTensorData<float>(hello_input())[0]= 1.57f;
+	hello_invoke();
+	float out = tflite::GetTensorData<float>(hello_output())[0];
 	std::cerr << "compiled result " << out << std::endl;
 }
 

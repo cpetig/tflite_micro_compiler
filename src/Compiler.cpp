@@ -286,9 +286,12 @@ size_t )"
       << prefix_ << R"(input_size(int index) {
   return g_ctx.tensors[inTensorIndices[index]].bytes;
 }
+TfLiteTensor* )" << prefix_ << R"(input(int index) {
+  return &g_ctx.tensors[inTensorIndices[index]];
+}
 
 static const int outTensorIndices[] = {
-  )";
+  )"; // TODO: perhaps use a smaller type than int?
   for (auto outIndex : outputTensorIndices_) {
     out << outIndex << ", ";
   }
@@ -301,6 +304,9 @@ const void *)"
 size_t )"
       << prefix_ << R"(output_size(int index) {
   return g_ctx.tensors[outTensorIndices[index]].bytes;
+}
+TfLiteTensor* )" << prefix_ << R"(output(int index) {
+  return &g_ctx.tensors[outTensorIndices[index]];
 }
 
 void )"
