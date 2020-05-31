@@ -64,13 +64,16 @@ bool tflmc::Compiler::init(const void *modelData) {
   subgraph_ = (*subgraphs)[0];
   auto tensors = subgraph_->tensors();
   auto operators = subgraph_->operators();
-  if (subgraph_->inputs()->size() != 1 || subgraph_->outputs()->size() != 1) {
-    std::cerr
-        << "Currently only modes with one input and one output are supported\n";
+  if (subgraph_->inputs()->size() == 0 || subgraph_->outputs()->size() == 0) {
+    std::cerr << "No inputs or no outputs found in model\n";
     return false;
   }
-  inputTensorIndex_ = subgraph_->inputs()->Get(0);
-  outputTensorIndex_ = subgraph_->outputs()->Get(0);
+  for (auto inIndex : *subgraph_->inputs()) {
+    inputTensorIndices_.push_back(inIndex);
+  }
+  for (auto outIndex : *subgraph_->outputs()) {
+    outputTensorIndices_.push_back(outIndex);
+  }
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(128 * 1024 * 1024);
@@ -264,26 +267,40 @@ void )"
   }
   wr << R"(}
 
+static const int inTensorIndices[] = {
+  )";
+  for (auto inIndex : inputTensorIndices_) {
+    out << inIndex << ", ";
+  }
+  out << R"(
+};
 void *)"
-     << prefix_ << R"(input_ptr() {
-  return g_ctx.tensors[)"
-     << inputTensorIndex_ << R"(].data.data;
+      << prefix_ << R"(input_ptr(int index) {
+  return g_ctx.tensors[inTensorIndices[index]].data.data;
 }
-
-const void *)"
-     << prefix_ << R"(output_ptr() {
-  return g_ctx.tensors[)"
-     << outputTensorIndex_ << R"(].data.data;
-}
-
 size_t )"
-     << prefix_ << R"(output_size() {
-  return g_ctx.tensors[)"
-     << outputTensorIndex_ << R"(].bytes;
+      << prefix_ << R"(input_size(int index) {
+  return g_ctx.tensors[inTensorIndices[index]].bytes;
+}
+
+static const int outTensorIndices[] = {
+  )";
+  for (auto outIndex : outputTensorIndices_) {
+    out << outIndex << ", ";
+  }
+  out << R"(
+};
+const void *)"
+      << prefix_ << R"(output_ptr(int index) {
+  return g_ctx.tensors[outTensorIndices[index]].data.data;
+}
+size_t )"
+      << prefix_ << R"(output_size(int index) {
+  return g_ctx.tensors[outTensorIndices[index]].bytes;
 }
 
 void )"
-     << prefix_ << R"(invoke() {
+      << prefix_ << R"(invoke() {
   TfLiteStatus status = kTfLiteOk;
 )";
   for (size_t i = 0; i < nodes_.size(); i++) {

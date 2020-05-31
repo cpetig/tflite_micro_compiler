@@ -55,8 +55,8 @@ class Compiler {
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;
-  int32_t inputTensorIndex_ = -1;
-  int32_t outputTensorIndex_ = -1;
+  std::vector<int32_t> inputTensorIndices_;
+  std::vector<int32_t> outputTensorIndices_;
 };
 
 }  // namespace tflmc

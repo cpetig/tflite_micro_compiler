@@ -4,9 +4,10 @@
 #include <vector>
 
 extern void model_init();
-extern void *model_input_ptr();
-extern const void *model_output_ptr();
-extern size_t model_output_size();
+extern void *model_input_ptr(int index = 0);
+extern size_t model_input_size(int index = 0);
+extern const void *model_output_ptr(int index = 0);
+extern size_t model_output_size(int index = 0);
 extern void model_invoke();
 
 int main(int argc, char *argv[]) {
@@ -14,14 +15,12 @@ int main(int argc, char *argv[]) {
     std::cerr << "Usage: " << argv[0] << " inDataFile\n";
     return 1;
   }
-  std::ifstream inFile(argv[1], std::ios::binary | std::ios::ate);
-  auto sz = inFile.tellg();
-  inFile.seekg(0, std::ios::beg);
+  std::ifstream inFile(argv[1], std::ios::binary);
 
   model_init();
 
-  std::vector<char> inData(sz);
-  if (!inFile.read((char *)model_input_ptr(), sz)) {
+  std::vector<char> inData(model_input_size());
+  if (!inFile.read((char *)model_input_ptr(), model_input_size())) {
     std::cerr << "Failed to read input file\n";
     return 1;
   }
