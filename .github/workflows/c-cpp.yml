@@ -28,7 +28,7 @@ jobs:
       shell: bash
       run: |
         cd build
-        make
+        cmake --build .
     - name: run
       shell: bash
       run: |
@@ -43,7 +43,7 @@ jobs:
         mkdir build
         cd build
         cmake ..
-        make
+        cmake --build .
         # Binary representation of 4.71 (1.5*PI)
         echo -n -e '\x52\xb8\x96\x40' > inData.bin
         # Binary representation of -1.09 (~sin(1.5*PI))
