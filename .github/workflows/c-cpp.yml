@@ -13,47 +13,59 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: requirements
+    - name: Requirements
       shell: bash
       run: |
         cd ..
         git clone https://github.com/tensorflow/tensorflow.git
         cd tensorflow
         make -f tensorflow/lite/micro/tools/make/Makefile hello_world
-    
-    - name: requirements-win
+    - name: Requirements (Windows)
       if: matrix.config.os == 'windows-latest'
       run: |
         choco install wget unzip
-    - name: configure
+    - name: Configure
       shell: bash
       run: |
         mkdir build
         cd build
         cmake ${{ matrix.config.cmake-generator }} ..
-    - name: compile
+    - name: Compile
       shell: bash
       run: |
         cd build
         cmake --build .
-    - name: run
+    - name: Run
       shell: bash
       run: |
         cd build
         wget https://storage.googleapis.com/download.tensorflow.org/models/tflite/micro/hello_world_2020_04_13.zip
         unzip hello_world_2020_04_13.zip
         ./compiler hello_world/models/model.tflite out.cpp
-    - name: test
-      shell: bash
+    - name: Test setup
       run: |
         cd examples/generic_test
         mkdir build
         cd build
         cmake ${{ matrix.config.cmake-generator }} ..
         cmake --build .
-        # Binary representation of 4.71 (1.5*PI)
+        # Binary representation of output -1.09 (~sin(1.5*PI))
+        echo "\xd6\xf3\x8b\xbf" > outExpect.txt
+    # Binary representation of input 4.71 (1.5*PI)
+    - name: Test setup (Windows)
+      if: matrix.config.os == 'windows-latest'
+      run: |
+        cd examples/generic_test/build
+        echo 52 b8 96 40 > inData.tmp
+        certutil -f -decodehex inData.tmp inData.bin
+    - name: Test setup (Linux)
+      if: matrix.config.os == 'ubuntu-latest'
+      run: |
+        cd examples/generic_test/build
         echo -n -e '\x52\xb8\x96\x40' > inData.bin
-        # Binary representation of -1.09 (~sin(1.5*PI))
-        echo "\xd6\xf3\x8b\xbf" > outExpect.bin
-        ./generic_test inData.bin > outData.bin
-        cmp outData.bin outExpect.bin
+    - name: Test run
+      shell: bash
+      run: |
+        cd examples/generic_test/build
+        ./generic_test inData.bin > outData.txt
+        cmp outData.txt outExpect.txt
