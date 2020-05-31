@@ -58,6 +58,9 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
                                      const void* data,
                                      const std::string& name) {
   using namespace tflmc;
+  if (!data) {
+    return;
+  }
   out_ << "const ";
   switch (op) {
     case tflite::BuiltinOperator_CONV_2D: {

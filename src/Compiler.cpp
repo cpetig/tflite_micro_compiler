@@ -227,8 +227,13 @@ void )"
        << ";\n";
     wr << nodeI << "temporaries = nullptr;\n";
     // TODO: Is this cast safe or does the data need to be non-const?
-    wr << nodeI << "builtin_data = const_cast<void*>(static_cast<const void*>(&"
-       << prefix_ << "opdata" << i << "));\n";
+    if (nodes_[i].node.builtin_data) {
+      wr << nodeI
+         << "builtin_data = const_cast<void*>(static_cast<const void*>(&"
+         << prefix_ << "opdata" << i << "));\n";
+    } else {
+      wr << nodeI << "builtin_data = nullptr;\n";
+    }
     wr << nodeI << "custom_initial_data = nullptr;\n";
     wr << nodeI << "custom_initial_data_size = 0;\n";
     wr << nodeI << "delegate = nullptr;\n";
