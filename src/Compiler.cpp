@@ -139,8 +139,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 namespace {
 
 constexpr int kTensorArenaSize = )"
-     << arenaBufferSize_ << R"( + )" << tensors_.size()
-     << R"( * sizeof(TfLiteTensor);
+     << arenaBufferSize_ << R"(;
 uint8_t g_tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
 
 TfLiteContext g_ctx{};

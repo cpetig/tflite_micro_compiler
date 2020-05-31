@@ -237,14 +237,14 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
     for (int i = 0; i < aq->scale->size; i++) {
       out_ << aq->scale->data[i] << ", ";
     }
-    out_ << "} };" << '\n';
+    out_ << "} };\n";
     out_ << "const int " << name << "_zero[" << aq->zero_point->size + 1
          << "] = { " << aq->zero_point->size << ", ";
     writeIntArrayData(*aq->zero_point);
-    out_ << "};" << '\n';
+    out_ << " };\n";
     out_ << "const TfLiteAffineQuantization " << name << " = { "
          << "(TfLiteFloatArray*)&" << name << "_scale, "
          << "(TfLiteIntArray*)&" << name << "_zero, " << aq->quantized_dimension
-         << " };" << '\n';
+         << " };\n";
   }
 }
