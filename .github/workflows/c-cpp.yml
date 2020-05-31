@@ -7,8 +7,10 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest]
-        cmake-generator: ["", "-G \"MinGW Makefiles\""]
-    runs-on: ${{ matrix.platform }}
+        config:
+          - {os: ubuntu-latest, cmake-generator: ""}
+          - {os: windows-latest, cmake-generator: "-G \"MinGW Makefiles\""}
+    runs-on: ${{ matrix.config.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -24,7 +26,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ${{ matrix.cmake-generator }} ..
+        cmake ${{ matrix.config.cmake-generator }} ..
     - name: compile
       shell: bash
       run: |
@@ -43,7 +45,7 @@ jobs:
         cd examples/generic_test
         mkdir build
         cd build
-        cmake ${{ matrix.cmake-generator }} ..
+        cmake ${{ matrix.config.cmake-generator }} ..
         cmake --build .
         # Binary representation of 4.71 (1.5*PI)
         echo -n -e '\x52\xb8\x96\x40' > inData.bin
