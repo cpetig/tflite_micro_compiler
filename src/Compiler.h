@@ -11,7 +11,8 @@
 namespace tflmc {
 
 bool CompileFile(const std::string &modelFileName,
-                 const std::string &outFileName);
+                 const std::string &outFileName,
+                 const std::string &prefix = "model_");
 
 class Compiler {
  public:

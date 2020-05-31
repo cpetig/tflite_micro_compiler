@@ -8,7 +8,8 @@
 #include "tensorflow/lite/version.h"
 
 bool tflmc::CompileFile(const std::string &modelFileName,
-                        const std::string &outFileName) {
+                        const std::string &outFileName,
+                        const std::string &prefix) {
   // Load model flatbuffer.
   std::ifstream model_file(modelFileName, std::ios::binary | std::ios::ate);
   auto sz = model_file.tellg();
@@ -26,7 +27,7 @@ bool tflmc::CompileFile(const std::string &modelFileName,
   }
 
   try {
-    Compiler compiler(model_data.data());
+    Compiler compiler(model_data.data(), prefix);
     compiler.writeSource(outFile);
     return true;
   } catch (const std::exception &e) {
