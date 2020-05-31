@@ -1,14 +1,9 @@
-name: C/C++ CI
+name: CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +19,7 @@ jobs:
         mkdir build
         cd build
         cmake ..
-    - name: make
+    - name: compile
       run: |
         cd build
         make
