@@ -23,4 +23,4 @@ clean-examples:
 	$(MAKE) -C examples clean
 
 clean-compiler:
-	rm src/*.o compiler
+	$(RM) src/*.o compiler
