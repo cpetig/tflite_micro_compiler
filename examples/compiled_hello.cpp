@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 31.05.2020 19:24:36
+// Generated on: 31.05.2020 22:03:45
 
 #include <cassert>
 
@@ -14,10 +14,29 @@ uint8_t g_tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
+enum used_operators_e {
+  OP_QUANTIZE, OP_FULLY_CONNECTED, OP_DEQUANTIZE,  OP_LAST
+};
+struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constand memory
+  TfLiteType type;
+  void* data;
+  TfLiteIntArray* dims;
+  // TfLiteQuantizationParams params;
+  // TfLiteAllocationType allocation_type;
+  size_t bytes;
+  const char* name;
+  TfLiteQuantization quantization;
+};
+struct NodeInfo_t { // subset of TfLiteNode used for initialization from constant memory
+  struct TfLiteIntArray* inputs;
+  struct TfLiteIntArray* outputs;
+  void* builtin_data;
+  used_operators_e used_op_index;
+};
 
 TfLiteContext g_ctx{};
 TfLiteTensor g_tensors[12];
-TfLiteRegistration *g_registrations[3];
+TfLiteRegistration *g_registrations[OP_LAST];
 TfLiteNode g_nodes[5];
 
 const TfArray<2, int> hello_tensor_dimension0 = { 2, { 1,1 } };
@@ -117,181 +136,79 @@ const TfArray<3, int> hello_inputs3 = { 3, { 7,8,9 } };
 const TfArray<1, int> hello_outputs3 = { 1, { 0 } };
 const TfArray<1, int> hello_inputs4 = { 1, { 0 } };
 const TfArray<1, int> hello_outputs4 = { 1, { 11 } };
-
-static TfLiteStatus FakeAllocatePersistentBuffer(struct TfLiteContext* ctx,
+const TensorInfo_t tensors[] = {
+  { kTfLiteInt8, g_tensor_arena + 0, (TfLiteIntArray*)&hello_tensor_dimension0, 1, "Identity_int8", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant0))}, },
+  { kTfLiteInt8, g_tensor_arena + 0, (TfLiteIntArray*)&hello_tensor_dimension1, 1, "dense_2_input_int8", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant1))}, },
+  { kTfLiteInt8, (void*)hello_tensor_data2, (TfLiteIntArray*)&hello_tensor_dimension2, 16, "sequential_1/dense_2/MatMul/ReadVariableOp/transpose", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant2))}, },
+  { kTfLiteInt32, (void*)hello_tensor_data3, (TfLiteIntArray*)&hello_tensor_dimension3, 64, "sequential_1/dense_2/MatMul_bias", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant3))}, },
+  { kTfLiteInt8, g_tensor_arena + 16, (TfLiteIntArray*)&hello_tensor_dimension4, 16, "sequential_1/dense_2/Relu", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant4))}, },
+  { kTfLiteInt8, (void*)hello_tensor_data5, (TfLiteIntArray*)&hello_tensor_dimension5, 256, "sequential_1/dense_3/MatMul/ReadVariableOp/transpose", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant5))}, },
+  { kTfLiteInt32, (void*)hello_tensor_data6, (TfLiteIntArray*)&hello_tensor_dimension6, 64, "sequential_1/dense_3/MatMul_bias", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant6))}, },
+  { kTfLiteInt8, g_tensor_arena + 32, (TfLiteIntArray*)&hello_tensor_dimension7, 16, "sequential_1/dense_3/Relu", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant7))}, },
+  { kTfLiteInt8, (void*)hello_tensor_data8, (TfLiteIntArray*)&hello_tensor_dimension8, 16, "sequential_1/dense_4/MatMul/ReadVariableOp/transpose", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant8))}, },
+  { kTfLiteInt32, (void*)hello_tensor_data9, (TfLiteIntArray*)&hello_tensor_dimension9, 4, "sequential_1/dense_4/MatMul_bias", {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant9))}, },
+  { kTfLiteFloat32, g_tensor_arena + 16, (TfLiteIntArray*)&hello_tensor_dimension10, 4, "dense_2_input", {kTfLiteNoQuantization, nullptr}, },
+  { kTfLiteFloat32, g_tensor_arena + 16, (TfLiteIntArray*)&hello_tensor_dimension11, 4, "Identity", {kTfLiteNoQuantization, nullptr}, },
+};const NodeInfo_t nodes[] = {
+  { (TfLiteIntArray*)&hello_inputs0, (TfLiteIntArray*)&hello_outputs0, nullptr, OP_QUANTIZE, },
+  { (TfLiteIntArray*)&hello_inputs1, (TfLiteIntArray*)&hello_outputs1, const_cast<void*>(static_cast<const void*>(&hello_opdata1)), OP_FULLY_CONNECTED, },
+  { (TfLiteIntArray*)&hello_inputs2, (TfLiteIntArray*)&hello_outputs2, const_cast<void*>(static_cast<const void*>(&hello_opdata2)), OP_FULLY_CONNECTED, },
+  { (TfLiteIntArray*)&hello_inputs3, (TfLiteIntArray*)&hello_outputs3, const_cast<void*>(static_cast<const void*>(&hello_opdata3)), OP_FULLY_CONNECTED, },
+  { (TfLiteIntArray*)&hello_inputs4, (TfLiteIntArray*)&hello_outputs4, nullptr, OP_DEQUANTIZE, },
+};
+static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes, void** ptr) {
-  static uint8_t *fakeAllocPtr = g_tensor_arena + sizeof(g_tensor_arena);
+  static uint8_t *AllocPtr = g_tensor_arena + sizeof(g_tensor_arena);
 
-  fakeAllocPtr -= bytes;
-  *ptr = fakeAllocPtr;
+  AllocPtr -= bytes;
+  *ptr = AllocPtr;
   return kTfLiteOk;
 }
 } // namespace
 
-void hello_init() {
-  g_ctx.AllocatePersistentBuffer = &FakeAllocatePersistentBuffer;
+TfLiteStatus hello_init() {
+  g_ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
   g_ctx.tensors = g_tensors;
   g_ctx.tensors_size = 12;
-  g_tensors[0].data.data = g_tensor_arena + 0;
-  g_tensors[0].type = kTfLiteInt8;
-  g_tensors[0].is_variable = false;
-  g_tensors[0].allocation_type = kTfLiteArenaRw;
-  g_tensors[0].bytes = 1;
-  g_tensors[0].dims = (TfLiteIntArray*)&hello_tensor_dimension0;
-  g_tensors[0].params.scale = 0.0084758047014474869;
-  g_tensors[0].params.zero_point = 2;
-  g_tensors[0].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant0))};
-  g_tensors[1].data.data = g_tensor_arena + 0;
-  g_tensors[1].type = kTfLiteInt8;
-  g_tensors[1].is_variable = false;
-  g_tensors[1].allocation_type = kTfLiteArenaRw;
-  g_tensors[1].bytes = 1;
-  g_tensors[1].dims = (TfLiteIntArray*)&hello_tensor_dimension1;
-  g_tensors[1].params.scale = 0.024573976173996925;
-  g_tensors[1].params.zero_point = -128;
-  g_tensors[1].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant1))};
-  g_tensors[2].data.data = (void*)hello_tensor_data2;
-  g_tensors[2].type = kTfLiteInt8;
-  g_tensors[2].is_variable = false;
-  g_tensors[2].allocation_type = kTfLiteMmapRo;
-  g_tensors[2].bytes = 16;
-  g_tensors[2].dims = (TfLiteIntArray*)&hello_tensor_dimension2;
-  g_tensors[2].params.scale = 0.0042242803610861301;
-  g_tensors[2].params.zero_point = 0;
-  g_tensors[2].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant2))};
-  g_tensors[3].data.data = (void*)hello_tensor_data3;
-  g_tensors[3].type = kTfLiteInt32;
-  g_tensors[3].is_variable = false;
-  g_tensors[3].allocation_type = kTfLiteMmapRo;
-  g_tensors[3].bytes = 64;
-  g_tensors[3].dims = (TfLiteIntArray*)&hello_tensor_dimension3;
-  g_tensors[3].params.scale = 0.00010380736785009503;
-  g_tensors[3].params.zero_point = 0;
-  g_tensors[3].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant3))};
-  g_tensors[4].data.data = g_tensor_arena + 16;
-  g_tensors[4].type = kTfLiteInt8;
-  g_tensors[4].is_variable = false;
-  g_tensors[4].allocation_type = kTfLiteArenaRw;
-  g_tensors[4].bytes = 16;
-  g_tensors[4].dims = (TfLiteIntArray*)&hello_tensor_dimension4;
-  g_tensors[4].params.scale = 0.011936621740460396;
-  g_tensors[4].params.zero_point = -128;
-  g_tensors[4].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant4))};
-  g_tensors[5].data.data = (void*)hello_tensor_data5;
-  g_tensors[5].type = kTfLiteInt8;
-  g_tensors[5].is_variable = false;
-  g_tensors[5].allocation_type = kTfLiteMmapRo;
-  g_tensors[5].bytes = 256;
-  g_tensors[5].dims = (TfLiteIntArray*)&hello_tensor_dimension5;
-  g_tensors[5].params.scale = 0.012784697115421295;
-  g_tensors[5].params.zero_point = 0;
-  g_tensors[5].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant5))};
-  g_tensors[6].data.data = (void*)hello_tensor_data6;
-  g_tensors[6].type = kTfLiteInt32;
-  g_tensors[6].is_variable = false;
-  g_tensors[6].allocation_type = kTfLiteMmapRo;
-  g_tensors[6].bytes = 64;
-  g_tensors[6].dims = (TfLiteIntArray*)&hello_tensor_dimension6;
-  g_tensors[6].params.scale = 0.00015260609507095069;
-  g_tensors[6].params.zero_point = 0;
-  g_tensors[6].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant6))};
-  g_tensors[7].data.data = g_tensor_arena + 32;
-  g_tensors[7].type = kTfLiteInt8;
-  g_tensors[7].is_variable = false;
-  g_tensors[7].allocation_type = kTfLiteArenaRw;
-  g_tensors[7].bytes = 16;
-  g_tensors[7].dims = (TfLiteIntArray*)&hello_tensor_dimension7;
-  g_tensors[7].params.scale = 0.0058130817487835884;
-  g_tensors[7].params.zero_point = -128;
-  g_tensors[7].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant7))};
-  g_tensors[8].data.data = (void*)hello_tensor_data8;
-  g_tensors[8].type = kTfLiteInt8;
-  g_tensors[8].is_variable = false;
-  g_tensors[8].allocation_type = kTfLiteMmapRo;
-  g_tensors[8].bytes = 16;
-  g_tensors[8].dims = (TfLiteIntArray*)&hello_tensor_dimension8;
-  g_tensors[8].params.scale = 0.0084969336166977882;
-  g_tensors[8].params.zero_point = 0;
-  g_tensors[8].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant8))};
-  g_tensors[9].data.data = (void*)hello_tensor_data9;
-  g_tensors[9].type = kTfLiteInt32;
-  g_tensors[9].is_variable = false;
-  g_tensors[9].allocation_type = kTfLiteMmapRo;
-  g_tensors[9].bytes = 4;
-  g_tensors[9].dims = (TfLiteIntArray*)&hello_tensor_dimension9;
-  g_tensors[9].params.scale = 4.9393369408790022e-05;
-  g_tensors[9].params.zero_point = 0;
-  g_tensors[9].quantization = {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&hello_quant9))};
-  g_tensors[10].data.data = g_tensor_arena + 16;
-  g_tensors[10].type = kTfLiteFloat32;
-  g_tensors[10].is_variable = false;
-  g_tensors[10].allocation_type = kTfLiteArenaRw;
-  g_tensors[10].bytes = 4;
-  g_tensors[10].dims = (TfLiteIntArray*)&hello_tensor_dimension10;
-  g_tensors[11].data.data = g_tensor_arena + 16;
-  g_tensors[11].type = kTfLiteFloat32;
-  g_tensors[11].is_variable = false;
-  g_tensors[11].allocation_type = kTfLiteArenaRw;
-  g_tensors[11].bytes = 4;
-  g_tensors[11].dims = (TfLiteIntArray*)&hello_tensor_dimension11;
+  for(size_t i = 0; i < 12; ++i) {
+    g_tensors[i].data.data = tensors[i].data;
+    g_tensors[i].type = tensors[i].type;
+    g_tensors[i].is_variable = false;
+    g_tensors[i].allocation_type = (g_tensor_arena <= tensors[i].data && tensors[i].data < g_tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
+    g_tensors[i].bytes = tensors[i].bytes;
+    g_tensors[i].dims = tensors[i].dims;
+    g_tensors[i].quantization = tensors[i].quantization;
+    if (tensors[i].quantization.type == kTfLiteAffineQuantization) {
+      TfLiteAffineQuantization const* quant = ((TfLiteAffineQuantization const*)(tensors[i].quantization.params));
+      g_tensors[i].params.scale = quant->scale->data[0];
+      g_tensors[i].params.zero_point = quant->zero_point->data[0];
+    }
+  }
+  g_registrations[OP_QUANTIZE] = tflite::ops::micro::Register_QUANTIZE();
+  g_registrations[OP_FULLY_CONNECTED] = tflite::ops::micro::Register_FULLY_CONNECTED();
+  g_registrations[OP_DEQUANTIZE] = tflite::ops::micro::Register_DEQUANTIZE();
 
-  g_registrations[0] = tflite::ops::micro::Register_QUANTIZE();
-  g_registrations[1] = tflite::ops::micro::Register_FULLY_CONNECTED();
-  g_registrations[2] = tflite::ops::micro::Register_DEQUANTIZE();
-
-  g_nodes[0].inputs = (TfLiteIntArray*)&hello_inputs0;
-  g_nodes[0].outputs = (TfLiteIntArray*)&hello_outputs0;
-  g_nodes[0].temporaries = nullptr;
-  g_nodes[0].builtin_data = nullptr;
-  g_nodes[0].custom_initial_data = nullptr;
-  g_nodes[0].custom_initial_data_size = 0;
-  g_nodes[0].delegate = nullptr;
-  g_nodes[1].inputs = (TfLiteIntArray*)&hello_inputs1;
-  g_nodes[1].outputs = (TfLiteIntArray*)&hello_outputs1;
-  g_nodes[1].temporaries = nullptr;
-  g_nodes[1].builtin_data = const_cast<void*>(static_cast<const void*>(&hello_opdata1));
-  g_nodes[1].custom_initial_data = nullptr;
-  g_nodes[1].custom_initial_data_size = 0;
-  g_nodes[1].delegate = nullptr;
-  g_nodes[2].inputs = (TfLiteIntArray*)&hello_inputs2;
-  g_nodes[2].outputs = (TfLiteIntArray*)&hello_outputs2;
-  g_nodes[2].temporaries = nullptr;
-  g_nodes[2].builtin_data = const_cast<void*>(static_cast<const void*>(&hello_opdata2));
-  g_nodes[2].custom_initial_data = nullptr;
-  g_nodes[2].custom_initial_data_size = 0;
-  g_nodes[2].delegate = nullptr;
-  g_nodes[3].inputs = (TfLiteIntArray*)&hello_inputs3;
-  g_nodes[3].outputs = (TfLiteIntArray*)&hello_outputs3;
-  g_nodes[3].temporaries = nullptr;
-  g_nodes[3].builtin_data = const_cast<void*>(static_cast<const void*>(&hello_opdata3));
-  g_nodes[3].custom_initial_data = nullptr;
-  g_nodes[3].custom_initial_data_size = 0;
-  g_nodes[3].delegate = nullptr;
-  g_nodes[4].inputs = (TfLiteIntArray*)&hello_inputs4;
-  g_nodes[4].outputs = (TfLiteIntArray*)&hello_outputs4;
-  g_nodes[4].temporaries = nullptr;
-  g_nodes[4].builtin_data = nullptr;
-  g_nodes[4].custom_initial_data = nullptr;
-  g_nodes[4].custom_initial_data_size = 0;
-  g_nodes[4].delegate = nullptr;
-
-  g_nodes[0].user_data = g_registrations[0]->init(&g_ctx, nullptr, 0);
-  g_nodes[1].user_data = g_registrations[1]->init(&g_ctx, (const char *)g_nodes[1].builtin_data, 0);
-  g_nodes[2].user_data = g_registrations[1]->init(&g_ctx, (const char *)g_nodes[2].builtin_data, 0);
-  g_nodes[3].user_data = g_registrations[1]->init(&g_ctx, (const char *)g_nodes[3].builtin_data, 0);
-  g_nodes[4].user_data = g_registrations[2]->init(&g_ctx, nullptr, 0);
-
-  TfLiteStatus status = kTfLiteOk;
-  status = g_registrations[0]->prepare(&g_ctx, &g_nodes[0]);
-  assert(status == kTfLiteOk && "Prepare failed");
-  status = g_registrations[1]->prepare(&g_ctx, &g_nodes[1]);
-  assert(status == kTfLiteOk && "Prepare failed");
-  status = g_registrations[1]->prepare(&g_ctx, &g_nodes[2]);
-  assert(status == kTfLiteOk && "Prepare failed");
-  status = g_registrations[1]->prepare(&g_ctx, &g_nodes[3]);
-  assert(status == kTfLiteOk && "Prepare failed");
-  status = g_registrations[2]->prepare(&g_ctx, &g_nodes[4]);
-  assert(status == kTfLiteOk && "Prepare failed");
+  for(size_t i = 0; i < 5; ++i) {
+    g_nodes[i].inputs = nodes[i].inputs;
+    g_nodes[i].outputs = nodes[i].outputs;
+    g_nodes[i].temporaries = nullptr;
+    g_nodes[i].builtin_data = nodes[i].builtin_data;
+    g_nodes[i].custom_initial_data = nullptr;
+    g_nodes[i].custom_initial_data_size = 0;
+    g_nodes[i].delegate = nullptr;
+    if (g_registrations[nodes[i].used_op_index]->init) {
+      g_nodes[i].user_data = g_registrations[nodes[i].used_op_index]->init(&g_ctx, (const char*)g_nodes[i].builtin_data, 0);
+    }
+  }
+  for(size_t i = 0; i < 5; ++i) {
+    if (g_registrations[nodes[i].used_op_index]->prepare) {
+      TfLiteStatus status = g_registrations[nodes[i].used_op_index]->prepare(&g_ctx, &g_nodes[i]);
+      if (status != kTfLiteOk) {
+        return status;
+      }
+    }
+  }
+  return kTfLiteOk;
 }
 
 static const int inTensorIndices[] = {
@@ -320,16 +237,12 @@ TfLiteTensor* hello_output(int index) {
   return &g_ctx.tensors[outTensorIndices[index]];
 }
 
-void hello_invoke() {
-  TfLiteStatus status = kTfLiteOk;
-  status = g_registrations[0]->invoke(&g_ctx, &g_nodes[0]);
-  assert(status == kTfLiteOk && "Invoke failed");
-  status = g_registrations[1]->invoke(&g_ctx, &g_nodes[1]);
-  assert(status == kTfLiteOk && "Invoke failed");
-  status = g_registrations[1]->invoke(&g_ctx, &g_nodes[2]);
-  assert(status == kTfLiteOk && "Invoke failed");
-  status = g_registrations[1]->invoke(&g_ctx, &g_nodes[3]);
-  assert(status == kTfLiteOk && "Invoke failed");
-  status = g_registrations[2]->invoke(&g_ctx, &g_nodes[4]);
-  assert(status == kTfLiteOk && "Invoke failed");
+TfLiteStatus hello_invoke() {
+  for(size_t i = 0; i < 5; ++i) {
+    TfLiteStatus status = g_registrations[nodes[i].used_op_index]->invoke(&g_ctx, &g_nodes[i]);
+    if (status != kTfLiteOk) {
+      return status;
+    }
+  }
+  return kTfLiteOk;
 }
