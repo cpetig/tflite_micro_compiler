@@ -8,11 +8,19 @@ CXXFLAGS=-g -std=c++14 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X8
 LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 	-ltensorflow-microlite
 
-all: compiler
-
-clean:
-	make -C examples clean
-	rm *.o compiler
+all: compiler examples
 
 compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o
 	$(CXX) -o $@ $^ ${LIBS}
+
+clean: clean-compiler clean-examples
+
+.PHONY: examples clean-examples clean-compiler
+examples:
+	cd examples && $(MAKE)
+
+clean-examples:
+	$(MAKE) -C examples clean
+
+clean-compiler:
+	rm src/*.o compiler
