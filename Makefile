@@ -1,5 +1,5 @@
 TF_DIR=../tensorflow
-CXXFLAGS=-g -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON \
+CXXFLAGS=-g -std=c++14 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON \
 	-I${TF_DIR} -I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ \
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/gemmlowp \
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
@@ -14,5 +14,5 @@ clean:
 	make -C examples clean
 	rm *.o compiler
 
-compiler: compiler.o tflu_dump.o fake_implementations.o
+compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o
 	$(CXX) -o $@ $^ ${LIBS}

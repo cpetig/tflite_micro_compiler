@@ -1,0 +1,44 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: requirements
+      run: |
+        cd ..
+        git clone https://github.com/tensorflow/tensorflow.git
+        cd tensorflow
+        make -f tensorflow/lite/micro/tools/make/Makefile hello_world_bin
+    - name: configure
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+    - name: compile
+      run: |
+        cd build
+        make
+    - name: run
+      run: |
+        cd build
+        wget https://storage.googleapis.com/download.tensorflow.org/models/tflite/micro/hello_world_2020_04_13.zip
+        unzip hello_world_2020_04_13.zip
+        ./compiler hello_world/models/model.tflite out.cpp
+    - name: test
+      run: |
+        cd examples/generic_test
+        mkdir build
+        cd build
+        cmake ..
+        make
+        # Binary representation of 4.71 (1.5*PI)
+        echo -n -e '\x52\xb8\x96\x40' > inData.bin
+        # Binary representation of -1.09 (~sin(1.5*PI))
+        echo "\xd6\xf3\x8b\xbf" > outExpect.bin
+        ./generic_test inData.bin > outData.bin
+        cmp outData.bin outExpect.bin
