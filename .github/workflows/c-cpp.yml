@@ -21,7 +21,7 @@ jobs:
         cd tensorflow
         make -f tensorflow/lite/micro/tools/make/Makefile hello_world
     - name: requirements-win
-      if: matrix.config.os == windows-latest
+      if: matrix.config.os == "windows-latest"
       run: |
         choco install wget unzip
     - name: configure
