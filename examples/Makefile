@@ -11,7 +11,7 @@ LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 all: hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
 
 clean:
-	rm *.o hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
+	$(RM) *.o hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
 
 mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o
 	$(CXX) -o $@ $^ ${LIBS}
