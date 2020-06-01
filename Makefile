@@ -6,7 +6,7 @@ CXXFLAGS=-g -std=c++14 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X8
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ruy \
 	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/kissfft
 LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
-	-ltensorflow-microlite
+	-ltensorflow-microlite -ldl
 
 all: compiler examples
 

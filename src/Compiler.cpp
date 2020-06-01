@@ -1,3 +1,4 @@
+
 #include "Compiler.h"
 
 #include <fstream>
@@ -6,6 +7,9 @@
 #include "CodeWriter.h"
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
+
+// dynamic loading for custom operators
+#include <dlfcn.h>
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -76,6 +80,29 @@ bool tflmc::Compiler::init(const void *modelData) {
     outputTensorIndices_.push_back(outIndex);
   }
 
+  // load custom operators
+  void *custom_lib = dlopen("./libtflite_micro_custom.so", RTLD_NOW);
+  if (custom_lib) {
+    TfLiteStatus (*reg_fun)(tflite::ops::micro::AllOpsResolver *res);
+    // see "man dlopen" for an explanation of this nasty construct
+    *(void **) (&reg_fun) = dlsym(custom_lib, "register_custom");
+    char *error = dlerror();
+    if (error) {
+      std::cerr << "libtflite_micro_custom.so: " << error << "\n";
+    }
+    else if (reg_fun) {
+      (*reg_fun)(&resolver_);
+    }
+  }
+#if 0 // activate this to debug problems with your library
+  else {
+    char *error = dlerror();
+    if (error) {
+      std::cerr << "libtflite_micro_custom.so: " << error << "\n";
+    }
+  }
+#endif
+
   // Build an interpreter to run the model with.
   arena_buf_.resize(128 * 1024 * 1024);
   interpreter_ = std::make_unique<tflite::MicroInterpreter>(
@@ -102,6 +129,10 @@ bool tflmc::Compiler::init(const void *modelData) {
     printf("operation %lu: %s\n", i, tflite::EnumNamesBuiltinOperator()[code]);
 
     RegistrationInfo regInfo{reg, code};
+    if (code == tflite::BuiltinOperator_CUSTOM) {
+      regInfo.custom_name = reg->custom_name;
+      has_custom_ops = true;
+    }
     auto itOp =
         std::find(registrations_.begin(), registrations_.end(), regInfo);
     if (itOp == registrations_.end()) {
@@ -123,6 +154,10 @@ bool tflmc::Compiler::init(const void *modelData) {
   size_t usedBytes = interpreter_->arena_used_bytes();
   arenaBufferSize_ = usedBytes - tensors_.size() * sizeof(TfLiteTensor);
 
+  if (custom_lib) {
+    dlclose(custom_lib);
+  }
+
   return true;
 }
 
@@ -136,7 +171,25 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
 
-namespace {
+)";
+  // declare custom registrations
+  if (has_custom_ops) {
+    wr << R"(namespace tflite {
+namespace ops {
+namespace micro {
+)";
+    for (size_t i = 0; i < registrations_.size(); i++) {
+      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+        wr << "extern TfLiteRegistration *Register_"<< registrations_[i].custom_name << "(void);\n";
+      }
+    }
+    wr << R"(}  // namespace micro
+}  // namespace ops
+}  // namespace tflite
+
+)";
+  }
+  wr << R"(namespace {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"( + )" << tensors_.size()
@@ -148,7 +201,12 @@ template <int SZ, class T> struct TfArray {
 enum used_operators_e {
   )";
   for (size_t i = 0; i < registrations_.size(); i++) {
-    wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code) << ", ";
+    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      wr << "OP_" << registrations_[i].custom_name << ", ";
+    }
+    else {
+      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code) << ", ";
+    }  
   }
   wr << R"( OP_LAST
 };
@@ -190,8 +248,15 @@ TfLiteNode g_nodes[)"
   for (size_t i = 0; i < nodes_.size(); i++) {
     auto &node = nodes_[i].node;
     auto &regInfo = registrations_[nodes_[i].regIndex];
-    wr.writeBuiltin(regInfo.code, node.builtin_data,
-                    prefix_ + "opdata" + std::to_string(i));
+    if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
+      wr << "uint8_t " << prefix_ + "opdata" + std::to_string(i) << "[" << node.custom_initial_data_size << "] = { ";
+      for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
+        wr << int(((uint8_t const*)node.custom_initial_data)[i]) << ", ";
+      wr << " }; /* custom_initial_data */";
+    } else {
+      wr.writeBuiltin(regInfo.code, node.builtin_data,
+                      prefix_ + "opdata" + std::to_string(i));
+    }
     wr.writeIntArray(*node.inputs, prefix_ + "inputs" + std::to_string(i));
     wr.writeIntArray(*node.outputs, prefix_ + "outputs" + std::to_string(i));
   }
@@ -237,7 +302,12 @@ TfLiteNode g_nodes[)"
       wr << "nullptr, ";
     }
     auto regI = nodes_[i].regIndex;
-    wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code) << ", ";
+    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      wr << "OP_" << registrations_[i].custom_name << ", ";
+    }
+    else {
+      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code) << ", ";
+    }
     wr << "},\n";
   }
   wr << "};";
@@ -278,9 +348,14 @@ TfLiteStatus )"
   }
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
-    auto opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+    std::string opName;
+    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      opName = registrations_[i].custom_name;
+    } else {
+      auto opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+    }
     wr << "  g_registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
-       << opName << "();\n";
+        << opName << "();\n";
   }
   wr << "\n";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
