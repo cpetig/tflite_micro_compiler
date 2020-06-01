@@ -210,7 +210,7 @@ enum used_operators_e {
   }
   wr << R"( OP_LAST
 };
-struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constand memory
+struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constant memory
   TfLiteType type;
   void* data;
   TfLiteIntArray* dims;
@@ -252,7 +252,7 @@ TfLiteNode g_nodes[)"
       wr << "uint8_t " << prefix_ + "opdata" + std::to_string(i) << "[" << node.custom_initial_data_size << "] = { ";
       for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
         wr << int(((uint8_t const*)node.custom_initial_data)[i]) << ", ";
-      wr << " }; /* custom_initial_data */";
+      wr << " }; /* custom_initial_data */\n";
     } else {
       wr.writeBuiltin(regInfo.code, node.builtin_data,
                       prefix_ + "opdata" + std::to_string(i));
@@ -295,7 +295,7 @@ TfLiteNode g_nodes[)"
     // TODO: Is this cast safe or does the data need to be non-const?
     // CP: I think so (as it typically just carries the trained operator parameters)
     // CP: Also if it were written to, we would see a segfault (write to text segment)
-    if (nodes_[i].node.builtin_data) {
+    if (nodes_[i].node.builtin_data || nodes_[i].node.custom_initial_data) {
       wr << "const_cast<void*>(static_cast<const void*>(&"
          << prefix_ << "opdata" << i << ")), ";
     } else {
