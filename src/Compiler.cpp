@@ -9,7 +9,9 @@
 #include "tensorflow/lite/version.h"
 
 // dynamic loading for custom operators
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -81,6 +83,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   // load custom operators
+#ifndef _WIN32
   void *custom_lib = dlopen("./libtflite_micro_custom.so", RTLD_NOW);
   if (custom_lib) {
     TfLiteStatus (*reg_fun)(tflite::ops::micro::AllOpsResolver *res);
@@ -101,6 +104,7 @@ bool tflmc::Compiler::init(const void *modelData) {
       std::cerr << "libtflite_micro_custom.so: " << error << "\n";
     }
   }
+#endif
 #endif
 
   // Build an interpreter to run the model with.
@@ -154,9 +158,11 @@ bool tflmc::Compiler::init(const void *modelData) {
   size_t usedBytes = interpreter_->arena_used_bytes();
   arenaBufferSize_ = usedBytes - tensors_.size() * sizeof(TfLiteTensor);
 
+#ifndef _WIN32
   if (custom_lib) {
     dlclose(custom_lib);
   }
+#endif
 
   return true;
 }
@@ -352,7 +358,7 @@ TfLiteStatus )"
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
     } else {
-      auto opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
     }
     wr << "  g_registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
         << opName << "();\n";
