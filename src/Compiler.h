@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include "MemMap.h"
 #include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -51,6 +52,7 @@ class Compiler {
   tflite::ops::micro::AllOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
+  MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
   std::vector<TensorInfo> tensors_;

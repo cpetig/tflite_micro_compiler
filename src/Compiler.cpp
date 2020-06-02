@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "CodeWriter.h"
+#include "RecordAllocations.h"
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
 
@@ -77,7 +78,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   // Build an interpreter to run the model with.
-  arena_buf_.resize(128 * 1024 * 1024);
+  arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
   interpreter_ = std::make_unique<tflite::MicroInterpreter>(
       model_, resolver_, arena_buf_.data(), arena_buf_.size(),
       &microErrReporter_);
@@ -89,8 +90,21 @@ bool tflmc::Compiler::init(const void *modelData) {
     return false;
   }
 
+  ptrdiff_t ramTensorBufferSize = 0;
+  ptrdiff_t romOffset = 0;
   for (size_t i = 0; i < interpreter_->tensors_size(); i++) {
-    tensors_.push_back({interpreter_->tensor(i)});
+    auto tensor = interpreter_->tensor(i);
+    tensors_.push_back({tensor});
+    if (tensor->allocation_type == kTfLiteMmapRo) {
+      memMap_.recordROM(romOffset, tensor->bytes,
+                        "ROMTensor" + std::to_string(i));
+      romOffset += tensor->bytes;
+    } else {
+      ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
+      ptrdiff_t highSize = offset + tensor->bytes;
+      ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
+      memMap_.recordRAM(offset, tensor->bytes, "RAMTensor" + std::to_string(i));
+    }
   }
 
   for (size_t i = 0; i < interpreter_->operators_size(); i++) {
@@ -112,16 +126,32 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back({*node, itOp - registrations_.begin()});
   }
 
+  auto runtimeAllocations = tflmc::RecordAllocations(model_);
+  ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
+  for (const auto &alloc : runtimeAllocations) {
+    minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
+  }
+  size_t totalRuntimeAllocSize = 0;
+  for (const auto &alloc : runtimeAllocations) {
+    // TODO: This drops the alignment between buffers. Is this fine?
+    totalRuntimeAllocSize += alloc.len;
+    ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
+    memMap_.recordRAM(offset, alloc.len,
+                      "PersistentBuf" + std::to_string(alloc.nodeIndex));
+  }
+
   // This includes:
   // - Tensors
   // - Scratch buffers
   // - Persistent buffers
-  // - Temporary interpreter data (TODO: Remove this!)
-  // - Tensor metadata
-  // Subtract tensor metadata, since we add it back on target to account for ABI
-  // differences.
-  size_t usedBytes = interpreter_->arena_used_bytes();
-  arenaBufferSize_ = usedBytes - tensors_.size() * sizeof(TfLiteTensor);
+  // tensor metadata is not included, since we declare them outside the arena
+  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
+
+  // TODO: This is overestimating by quite a bit because of ABI differences.
+  memMap_.recordRAM(arenaBufferSize_, tensors_.size() * sizeof(TfLiteTensor),
+                    "TensorMetadata");
+
+  memMap_.report();
 
   return true;
 }

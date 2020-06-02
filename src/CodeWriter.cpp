@@ -156,7 +156,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   {
     for (uint32_t i = 0; i < t.dims->data[0]; ++i)
       out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
-    out_ << " };\n";
+    out_ << "};\n";
   } else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
   {
     for (uint32_t i = 0; i < t.dims->data[0]; ++i) {

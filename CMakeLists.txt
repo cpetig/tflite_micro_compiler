@@ -10,6 +10,8 @@ ADD_LIBRARY(${PROJECT_NAME} STATIC
     src/CodeWriter.cpp
     src/Compiler.cpp
     src/TypeToString.cpp
+    src/RecordAllocations.cpp
+    src/MemMap.cpp
 )
 
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
@@ -24,6 +26,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC tensorflow-microlite)
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC
     TF_LITE_STATIC_MEMORY
     TF_LITE_DISABLE_X86_NEON
+    SUFFICIENT_ARENA_SIZE=128*1024*1024
 )
 
 ADD_EXECUTABLE(compiler src/main.cpp)
