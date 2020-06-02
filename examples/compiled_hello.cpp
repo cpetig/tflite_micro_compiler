@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 31.05.2020 22:03:45
+// Generated on: 02.06.2020 22:12:23
 
 #include <cassert>
 
@@ -9,7 +9,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 1056 + 12 * sizeof(TfLiteTensor);
+constexpr int kTensorArenaSize = 124;
 uint8_t g_tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -17,7 +17,7 @@ template <int SZ, class T> struct TfArray {
 enum used_operators_e {
   OP_QUANTIZE, OP_FULLY_CONNECTED, OP_DEQUANTIZE,  OP_LAST
 };
-struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constand memory
+struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constant memory
   TfLiteType type;
   void* data;
   TfLiteIntArray* dims;
@@ -69,7 +69,7 @@ const TfArray<2, int> hello_tensor_dimension2 = { 2, { 16,1 } };
 const TfArray<1, float> hello_quant2_scale = { 1, { 0.0042242803610861301, } };
 const TfArray<1, int> hello_quant2_zero = { 1, { 0 } };
 const TfLiteAffineQuantization hello_quant2 = { (TfLiteFloatArray*)&hello_quant2_scale, (TfLiteIntArray*)&hello_quant2_zero, 0 };
-const int32_t hello_tensor_data3[16] = { 1, 2897, -2489, 0, 3100, 0, 0, 1435, 0, 0, 8423, 0, 1938, -2828, -4011, 0,  };
+const int32_t hello_tensor_data3[16] = { 1, 2897, -2489, 0, 3100, 0, 0, 1435, 0, 0, 8423, 0, 1938, -2828, -4011, 0, };
 const TfArray<1, int> hello_tensor_dimension3 = { 1, { 16 } };
 const TfArray<1, float> hello_quant3_scale = { 1, { 0.00010380736785009503, } };
 const TfArray<1, int> hello_quant3_zero = { 1, { 0 } };
@@ -100,7 +100,7 @@ const TfArray<2, int> hello_tensor_dimension5 = { 2, { 16,16 } };
 const TfArray<1, float> hello_quant5_scale = { 1, { 0.012784697115421295, } };
 const TfArray<1, int> hello_quant5_zero = { 1, { 0 } };
 const TfLiteAffineQuantization hello_quant5 = { (TfLiteFloatArray*)&hello_quant5_scale, (TfLiteIntArray*)&hello_quant5_zero, 0 };
-const int32_t hello_tensor_data6[16] = { 0, 1276, 2719, 1637, -1987, 0, 2795, -2001, 1256, 2593, -442, 1224, 0, -2141, -1752, 1434,  };
+const int32_t hello_tensor_data6[16] = { 0, 1276, 2719, 1637, -1987, 0, 2795, -2001, 1256, 2593, -442, 1224, 0, -2141, -1752, 1434, };
 const TfArray<1, int> hello_tensor_dimension6 = { 1, { 16 } };
 const TfArray<1, float> hello_quant6_scale = { 1, { 0.00015260609507095069, } };
 const TfArray<1, int> hello_quant6_zero = { 1, { 0 } };
@@ -116,7 +116,7 @@ const TfArray<2, int> hello_tensor_dimension8 = { 2, { 1,16 } };
 const TfArray<1, float> hello_quant8_scale = { 1, { 0.0084969336166977882, } };
 const TfArray<1, int> hello_quant8_zero = { 1, { 0 } };
 const TfLiteAffineQuantization hello_quant8 = { (TfLiteFloatArray*)&hello_quant8_scale, (TfLiteIntArray*)&hello_quant8_zero, 0 };
-const int32_t hello_tensor_data9[1] = { -4382,  };
+const int32_t hello_tensor_data9[1] = { -4382, };
 const TfArray<1, int> hello_tensor_dimension9 = { 1, { 1 } };
 const TfArray<1, float> hello_quant9_scale = { 1, { 4.9393369408790022e-05, } };
 const TfArray<1, int> hello_quant9_zero = { 1, { 0 } };
