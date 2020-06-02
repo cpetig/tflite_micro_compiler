@@ -24,6 +24,9 @@ class Compiler {
   void writeSource(std::ostream &out);
   void writeHeader(std::ostream &out);
 
+  // Returns a name that describes a tensors relation to network layers.
+  std::string getTensorName(int tensorIndex) const;
+
  private:
   bool init(const void *modelData);
   tflite::ErrorReporter &errReporter() { return microErrReporter_; }

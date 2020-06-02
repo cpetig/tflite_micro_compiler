@@ -96,14 +96,13 @@ bool tflmc::Compiler::init(const void *modelData) {
     auto tensor = interpreter_->tensor(i);
     tensors_.push_back({tensor});
     if (tensor->allocation_type == kTfLiteMmapRo) {
-      memMap_.recordROM(romOffset, tensor->bytes,
-                        "ROMTensor" + std::to_string(i));
+      memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
       romOffset += tensor->bytes;
     } else {
       ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
-      memMap_.recordRAM(offset, tensor->bytes, "RAMTensor" + std::to_string(i));
+      memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
     }
   }
 
@@ -148,8 +147,13 @@ bool tflmc::Compiler::init(const void *modelData) {
   arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
 
   // TODO: This is overestimating by quite a bit because of ABI differences.
-  memMap_.recordRAM(arenaBufferSize_, tensors_.size() * sizeof(TfLiteTensor),
-                    "TensorMetadata");
+  size_t tensorMetaSize = tensors_.size() * sizeof(TfLiteTensor);
+  size_t nodeMetaSize = nodes_.size() * sizeof(TfLiteNode);
+  memMap_.recordRAM(arenaBufferSize_, tensorMetaSize, "TensorMetadata");
+  memMap_.recordRAM(arenaBufferSize_ + tensorMetaSize, nodeMetaSize,
+                    "NodeMetadata");
+  memMap_.recordRAM(arenaBufferSize_ + tensorMetaSize + nodeMetaSize,
+                    sizeof(TfLiteContext), "TfLiteContext");
 
   memMap_.report();
 
@@ -236,8 +240,8 @@ void )"
     wr << tensorI
        << "allocation_type = " << tflmc::to_string(t->allocation_type) << ";\n";
     wr << tensorI << "bytes = " << t->bytes << ";\n";
-    wr << tensorI << "dims = (TfLiteIntArray*)&" << prefix_ << "tensor_dimension"
-       << i << ";\n";
+    wr << tensorI << "dims = (TfLiteIntArray*)&" << prefix_
+       << "tensor_dimension" << i << ";\n";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << tensorI << "params.scale = " << t->params.scale << ";\n";
       wr << tensorI << "params.zero_point = " << t->params.zero_point << ";\n";
@@ -315,12 +319,13 @@ size_t )"
       << prefix_ << R"(input_size(int index) {
   return g_ctx.tensors[inTensorIndices[index]].bytes;
 }
-TfLiteTensor* )" << prefix_ << R"(input(int index) {
+TfLiteTensor* )"
+      << prefix_ << R"(input(int index) {
   return &g_ctx.tensors[inTensorIndices[index]];
 }
 
 static const int outTensorIndices[] = {
-  )"; // TODO: perhaps use a smaller type than int?
+  )";  // TODO: perhaps use a smaller type than int?
   for (auto outIndex : outputTensorIndices_) {
     out << outIndex << ", ";
   }
@@ -334,7 +339,8 @@ size_t )"
       << prefix_ << R"(output_size(int index) {
   return g_ctx.tensors[outTensorIndices[index]].bytes;
 }
-TfLiteTensor* )" << prefix_ << R"(output(int index) {
+TfLiteTensor* )"
+      << prefix_ << R"(output(int index) {
   return &g_ctx.tensors[outTensorIndices[index]];
 }
 
@@ -349,4 +355,35 @@ void )"
   }
   wr << R"(}
 )";
+}
+
+std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
+  TfLiteTensor *tensor = interpreter_->tensor(tensorIndex);
+
+  std::stringstream ss;
+  ss << (tensor->allocation_type == kTfLiteMmapRo ? "ROM" : "RAM") << "Tensor_";
+
+  auto nOps = interpreter_->operators_size();
+  for (int i = 0; i < nOps; i++) {
+    auto nodeAndReg = interpreter_->node_and_registration(i);
+    auto node = &nodeAndReg.node;
+
+    auto checkAndAdd = [&](const TfLiteIntArray *indices,
+                           const std::string &tag) {
+      if (indices) {
+        for (int k = 0; k < indices->size; k++) {
+          if (indices->data[k] == tensorIndex) {
+            ss << "L" << i << tag;
+          }
+        }
+      }
+    };
+
+    checkAndAdd(node->inputs, "in");
+    checkAndAdd(node->outputs, "out");
+    checkAndAdd(node->intermediates, "int");
+    checkAndAdd(node->temporaries, "tmp");
+  }
+
+  return ss.str();
 }
