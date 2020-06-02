@@ -23,15 +23,14 @@ USAGE:
 
 - the compiler is invoked as:
 
-  - ./compiler input.tflite arena_size prefix >output.cpp
+  - ./compiler input.tflite output.cpp [prefix]
 
-    e.g. ./compiler hello_world.tflite 3000 hello_ >hello_compiled.cpp
-
-    "arena_size" is the size of the temporary tensor buffer (activation storage during execution)
-    please note that this arena is also used for storing precalculated vales in the prepare stage
-    simply re-run init if you disturb the values inside
+    e.g. ./compiler hello_world.tflite hello_compiled.cpp hello_
 
 - for a quick view into the generated code see https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cpp
+
+  You can compare calling into interpreter and compiled code at https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world.cc
+  and https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world2.cc
 
 - The example directory contains a collection of traditional tflite micro and compiled versions:
 

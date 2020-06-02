@@ -171,6 +171,9 @@ namespace {
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
 uint8_t g_tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
+template <int SZ, class T> struct TfArray {
+  int sz; T elem[SZ];
+};
 
 TfLiteContext g_ctx{};
 TfLiteTensor g_tensors[)"
@@ -233,7 +236,7 @@ void )"
     wr << tensorI
        << "allocation_type = " << tflmc::to_string(t->allocation_type) << ";\n";
     wr << tensorI << "bytes = " << t->bytes << ";\n";
-    wr << tensorI << "dims = (TfLiteIntArray*)" << prefix_ << "tensor_dimension"
+    wr << tensorI << "dims = (TfLiteIntArray*)&" << prefix_ << "tensor_dimension"
        << i << ";\n";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << tensorI << "params.scale = " << t->params.scale << ";\n";
@@ -254,9 +257,9 @@ void )"
   wr << "\n";
   for (size_t i = 0; i < nodes_.size(); i++) {
     std::string nodeI = "  g_nodes[" + std::to_string(i) + "].";
-    wr << nodeI << "inputs = (TfLiteIntArray*)" << prefix_ << "inputs" << i
+    wr << nodeI << "inputs = (TfLiteIntArray*)&" << prefix_ << "inputs" << i
        << ";\n";
-    wr << nodeI << "outputs = (TfLiteIntArray*)" << prefix_ << "outputs" << i
+    wr << nodeI << "outputs = (TfLiteIntArray*)&" << prefix_ << "outputs" << i
        << ";\n";
     wr << nodeI << "temporaries = nullptr;\n";
     // TODO: Is this cast safe or does the data need to be non-const?
@@ -312,9 +315,12 @@ size_t )"
       << prefix_ << R"(input_size(int index) {
   return g_ctx.tensors[inTensorIndices[index]].bytes;
 }
+TfLiteTensor* )" << prefix_ << R"(input(int index) {
+  return &g_ctx.tensors[inTensorIndices[index]];
+}
 
 static const int outTensorIndices[] = {
-  )";
+  )"; // TODO: perhaps use a smaller type than int?
   for (auto outIndex : outputTensorIndices_) {
     out << outIndex << ", ";
   }
@@ -327,6 +333,9 @@ const void *)"
 size_t )"
       << prefix_ << R"(output_size(int index) {
   return g_ctx.tensors[outTensorIndices[index]].bytes;
+}
+TfLiteTensor* )" << prefix_ << R"(output(int index) {
+  return &g_ctx.tensors[outTensorIndices[index]];
 }
 
 void )"
