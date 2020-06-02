@@ -42,7 +42,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   auto allocator = &interpreter.allocator_;
 
   tflite::NodeAndRegistration *nodeAndRegs;
-  allocator->AllocateNodeAndRegistrations(resolver, &nodeAndRegs);
+  allocator->InitializeFromFlatbuffer(resolver, &nodeAndRegs);
 
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
