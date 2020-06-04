@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "MemMap.h"
-#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -38,8 +38,14 @@ class Compiler {
   struct RegistrationInfo {
     const TfLiteRegistration *reg = nullptr;
     tflite::BuiltinOperator code;
+    std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
-      return code == other.code;
+      if (code != other.code) return false;
+      if (code == tflite::BuiltinOperator_CUSTOM)
+      {
+        return custom_name == other.custom_name;
+      }
+      else return true;
     }
   };
   struct NodeInfo {
@@ -52,7 +58,7 @@ class Compiler {
   tflite::MicroErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
-  tflite::ops::micro::AllOpsResolver resolver_;
+  tflite::AllOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;
@@ -63,6 +69,8 @@ class Compiler {
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+
+  bool has_custom_ops = false;
 };
 
 }  // namespace tflmc

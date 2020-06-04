@@ -12,7 +12,7 @@
                 "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/kissfft"
            ],
             "defines": [ "TF_LITE_STATIC_MEMORY", "NDEBUG", "TF_LITE_DISABLE_X86_NEON", "SUFFICIENT_ARENA_SIZE" ],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64"
