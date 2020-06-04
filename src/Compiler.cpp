@@ -87,7 +87,7 @@ bool tflmc::Compiler::init(const void *modelData) {
 #ifndef _WIN32
   void *custom_lib = dlopen("./libtflite_micro_custom.so", RTLD_NOW);
   if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::ops::micro::AllOpsResolver *res);
+    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver *res);
     // see "man dlopen" for an explanation of this nasty construct
     *(void **) (&reg_fun) = dlsym(custom_lib, "register_custom");
     char *error = dlerror();
