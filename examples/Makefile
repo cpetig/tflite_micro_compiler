@@ -32,6 +32,6 @@ cifar10_compiled: truck.o cifar10_compiled.o cifar10_run_comp.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 regenerate: ../compiler
-	../compiler hello_world.tflite 3000 hello_ >compiled_hello.cpp
-	../compiler mobilnet.tflite 10485760 mobilnet_ >compiled_mobilnet.cpp
-	../compiler cifar10.tflite 150000 cifar_ >cifar10_compiled.cc
+	../compiler hello_world.tflite compiled_hello.cpp hello_ 
+	../compiler mobilnet.tflite compiled_mobilnet.cpp mobilnet_
+	../compiler cifar10.tflite cifar10_compiled.cc cifar_

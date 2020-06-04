@@ -38,8 +38,14 @@ class Compiler {
   struct RegistrationInfo {
     const TfLiteRegistration *reg = nullptr;
     tflite::BuiltinOperator code;
+    std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
-      return code == other.code;
+      if (code != other.code) return false;
+      if (code == tflite::BuiltinOperator_CUSTOM)
+      {
+        return custom_name == other.custom_name;
+      }
+      else return true;
     }
   };
   struct NodeInfo {
@@ -63,6 +69,8 @@ class Compiler {
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+
+  bool has_custom_ops = false;
 };
 
 }  // namespace tflmc
