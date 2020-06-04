@@ -1,6 +1,6 @@
 
 #include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
 
 namespace tflite {
 namespace ops {
@@ -69,7 +69,7 @@ TfLiteRegistration *Register_SQUEEZE(void) {
 }  // namespace ops
 }  // namespace tflite
 
-void register_addons(tflite::ops::micro::AllOpsResolver *res) {
+void register_addons(tflite::AllOpsResolver *res) {
   res->AddBuiltin(tflite::BuiltinOperator_REDUCE_MAX,
                   tflite::ops::micro::Register_REDUCE_MAX());
   res->AddBuiltin(tflite::BuiltinOperator_EXP,
