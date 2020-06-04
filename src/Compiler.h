@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "MemMap.h"
-#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -52,7 +52,7 @@ class Compiler {
   tflite::MicroErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
-  tflite::ops::micro::AllOpsResolver resolver_;
+  tflite::AllOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;
