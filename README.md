@@ -24,7 +24,7 @@ make
 
 ### Examples 
 The examples cmake [here](examples/CMakeLists.txt) is by default not included due to issues with TensorFlow source code compatibility issues when using specific code versions.
-To enable building the examples pass `TF_EXAMPLES=ON` to CMake.
+To enable building the examples pass `-DTF_EXAMPLES=ON` to CMake.
 
 ## Automatic TensorFlow Source Fetching
 
