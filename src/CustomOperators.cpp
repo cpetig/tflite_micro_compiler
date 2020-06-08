@@ -53,10 +53,10 @@ void tflmc::UnloadCustom(tflmc::custom_operator_handle custom_lib) {
 
 #else
 // anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
-tflmc::custom_operator_handle tflm::LoadCustom() {
+tflmc::custom_operator_handle tflmc::LoadCustom(tflite::AllOpsResolver *resolver) {
     return nullptr;
 }
 
-void tflmc::UnloadCustom(tflm::custom_operator_handle) {
+void tflmc::UnloadCustom(tflmc::custom_operator_handle) {
 }
 #endif
