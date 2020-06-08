@@ -37,6 +37,7 @@ SET(TF_LIB tensorflow-microlite)
 ADD_LIBRARY(${PROJECT_NAME} STATIC
     src/CodeWriter.cpp
     src/Compiler.cpp
+    src/CustomOperators.cpp
     src/TypeToString.cpp
     src/RecordAllocations.cpp
     src/MemMap.cpp

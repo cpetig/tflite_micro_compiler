@@ -10,7 +10,7 @@ LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 
 all: compiler examples
 
-compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o
+compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 clean: clean-compiler clean-examples

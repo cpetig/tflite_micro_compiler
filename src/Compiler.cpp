@@ -7,12 +7,8 @@
 #include "CodeWriter.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
+#include "CustomOperators.h"
 #include "tensorflow/lite/version.h"
-
-// dynamic loading for custom operators
-#ifndef _WIN32
-#include <dlfcn.h>
-#endif
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -82,31 +78,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (auto outIndex : *subgraph_->outputs()) {
     outputTensorIndices_.push_back(outIndex);
   }
-
-  // load custom operators
-#ifndef _WIN32
-  void *custom_lib = dlopen("./libtflite_micro_custom.so", RTLD_NOW);
-  if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver *res);
-    // see "man dlopen" for an explanation of this nasty construct
-    *(void **) (&reg_fun) = dlsym(custom_lib, "register_custom");
-    char *error = dlerror();
-    if (error) {
-      std::cerr << "libtflite_micro_custom.so: " << error << "\n";
-    }
-    else if (reg_fun) {
-      (*reg_fun)(&resolver_);
-    }
-  }
-#if 0 // activate this to debug problems with your library
-  else {
-    char *error = dlerror();
-    if (error) {
-      std::cerr << "libtflite_micro_custom.so: " << error << "\n";
-    }
-  }
-#endif
-#endif
+  tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver_);
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
@@ -191,12 +163,7 @@ bool tflmc::Compiler::init(const void *modelData) {
                     sizeof(TfLiteContext), "TfLiteContext");
 
   memMap_.report();
-
-#ifndef _WIN32
-  if (custom_lib) {
-    dlclose(custom_lib);
-  }
-#endif
+  tflmc::UnloadCustom(custom);
 
   return true;
 }
