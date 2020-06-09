@@ -79,7 +79,7 @@ cmake -DTF_DIR=../../my_tf_source ..
     e.g.
 
     ``` bash 
-    ./compiler hello_world.tflite hello_compiled.cpp hello_`
+    ./compiler hello_world.tflite hello_compiled.cpp hello_
     ```
 
 - for a quick view into the generated code see [`compiled_hello.cpp`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cpp)
