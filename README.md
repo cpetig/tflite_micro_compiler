@@ -69,6 +69,19 @@ e.g.
 cmake -DTF_DIR=../../my_tf_source ..
 ```
 
+## Additional Targets
+
+### format
+
+To invoke `clang-format` CMake provides the `format` target.
+
+e.g.
+
+```bash 
+cmake ..
+make format
+```
+
 ## Make
 
 - check out tensorflow master next to this project (in ../tensorflow)

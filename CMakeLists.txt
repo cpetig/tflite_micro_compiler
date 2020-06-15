@@ -36,18 +36,17 @@ ENDIF()
 
 SET(TF_LIB tensorflow-microlite)
 
+FILE(GLOB COMPILER_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
+
+FILE(GLOB COMPILER_SRCS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
 ADD_LIBRARY(${PROJECT_NAME} STATIC
-    src/CodeWriter.cpp
-    src/Compiler.cpp
-    src/CustomOperators.cpp
-    src/TypeToString.cpp
-    src/RecordAllocations.cpp
-    src/MemMap.cpp
-)
+    ${COMPILER_SRCS}
+    )
 
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
     ${TF_INCS}
-)
+    )
 
 IF(WIN32)
     TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib)
@@ -65,6 +64,11 @@ TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC
 
 ADD_EXECUTABLE(compiler src/main.cpp)
 TARGET_LINK_LIBRARIES(compiler ${PROJECT_NAME} ${CMAKE_DL_LIBS})
+
+ADD_CUSTOM_TARGET(
+    format
+    COMMAND clang-format -i ${COMPILER_SRCS} ${COMPILER_HEADERS}
+    )
 
 IF(TF_EXAMPLES)
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/examples)
