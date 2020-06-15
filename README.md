@@ -3,7 +3,7 @@
 Generate tflite micro code which bypasses the interpreter (directly calls into kernels)
 
 Basically this code uses a fully set up tflite micro instance to dump the internal allocations and
-function calls assigned to the model, then dumps the tensor and node settings into a compileable
+function calls assigned to the model, then dumps the tensor and node settings into a compilable
 file, eliminating the need for running the interpreter at each program start and for resolving the correct
 kernel at run time.
 
@@ -46,6 +46,15 @@ e.g.
 
 ``` bash
 cmake -DGET_TF_SRC=ON TF_TAG=v2.2.0 ..
+```
+
+Similarly a Git commit hash can be provided using `TF_COMMIT`. Note that
+`TF_TAG` takes precedence if both are provided.
+
+e.g.
+
+```bash
+cmake -DGET_TF_SRC TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
 ```
 
 ## Providing TensorFlow Source Manually
