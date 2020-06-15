@@ -281,7 +281,7 @@ TfLiteNode g_nodes[)"
        << "(TfLiteIntArray*)&" << prefix_ << "tensor_dimension"
        << i << ", ";
     wr << t->bytes << ", ";
-    wr << "\"" << t->name << "\", ";
+    wr << "\"" << ((t->name) ? t->name : "NO-NAME") << "\", ";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << "{kTfLiteAffineQuantization, "
             "const_cast<void*>(static_cast<const void*>(&"
