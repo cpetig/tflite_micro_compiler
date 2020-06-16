@@ -54,7 +54,17 @@ Similarly a Git commit hash can be provided using `TF_COMMIT`. Note that
 e.g.
 
 ```bash
-cmake -DGET_TF_SRC TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
+cmake -DGET_TF_SRC=ON TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
+```
+
+To checkout a different TensorFlow code base without clearing the CMake cache
+the argument `TF_RECACHE` should be set, this will force the TensorFlow
+source to be checked-out again.
+
+e.g.
+
+```bash
+cmake -DGET_TF_SRC=ON -DTF_RECACHE=ON TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
 ```
 
 ## Providing TensorFlow Source Manually

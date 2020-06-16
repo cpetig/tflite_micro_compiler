@@ -1,5 +1,11 @@
 SET(LIB_NAME tensorflow-microlite)
 
+IF(TF_RECACHE)
+    MESSAGE(STATUS "Rebasing TensorFlow source")
+    UNSET(TF_TAG CACHE)
+    UNSET(TF_COMMIT CACHE)
+ENDIF()
+
 IF(NOT TF_SRC)
     INCLUDE(FetchContent)
     IF(TF_TAG)
@@ -8,7 +14,7 @@ IF(NOT TF_SRC)
             tf 
             GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
             GIT_PROGRESS FALSE
-            GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
+            GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             GIT_TAG ${TF_TAG}
             QUIET
             )
@@ -18,7 +24,7 @@ IF(NOT TF_SRC)
             tf
             GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
             GIT_PROGRESS FALSE
-            GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
+            GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             GIT_TAG ${TF_COMMIT}
             QUIET
             )
@@ -27,7 +33,7 @@ IF(NOT TF_SRC)
             tf 
             GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
             GIT_PROGRESS FALSE
-            GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
+            GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             QUIET
             )
     ENDIF()

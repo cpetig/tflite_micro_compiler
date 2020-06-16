@@ -36,9 +36,24 @@ ENDIF()
 
 SET(TF_LIB tensorflow-microlite)
 
-FILE(GLOB COMPILER_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
+SET(COMPILER_HEADERS
+    src/CodeWriter.h
+    src/Compiler.h
+    src/CustomOperators.h
+    src/MemMap.h
+    src/RecordAllocations.h
+    src/TypeToString.h
+    )
 
-FILE(GLOB COMPILER_SRCS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+SET(COMPILER_SRCS
+    src/CodeWriter.cpp
+    src/Compiler.cpp
+    src/CustomOperators.cpp
+    src/MemMap.cpp
+    src/RecordAllocations.cpp
+    src/TypeToString.cpp
+    src/main.cpp
+    )
 
 ADD_LIBRARY(${PROJECT_NAME} STATIC
     ${COMPILER_SRCS}
@@ -73,8 +88,3 @@ ADD_CUSTOM_TARGET(
 IF(TF_EXAMPLES)
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/examples)
 ENDIF()
-
-UNSET(TF_EXAMPLES CACHE)
-UNSET(TF_TAG CACHE)
-UNSET(TF_COMMIT CACHE)
-UNSET(GET_TF_SRC CACHE)
