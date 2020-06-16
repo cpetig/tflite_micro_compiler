@@ -3,8 +3,8 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #undef private
 
-#include "RecordAllocations.h"
 #include "CustomOperators.h"
+#include "RecordAllocations.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 
@@ -18,7 +18,8 @@ static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
   auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
   assert(retVal == kTfLiteOk && "Alloc failure");
   g_loggedAllocations.push_back(
-      {-(g_arenaPtr - (uint8_t*)*ptr + SUFFICIENT_ARENA_SIZE), bytes, g_currentNodeIndex});
+      {-(g_arenaPtr - (uint8_t *)*ptr + SUFFICIENT_ARENA_SIZE), bytes,
+       g_currentNodeIndex});
   return retVal;
 }
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,

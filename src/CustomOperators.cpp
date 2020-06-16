@@ -14,29 +14,30 @@ limitations under the License.
 ==============================================================================*/
 
 #include "CustomOperators.h"
-#include <iostream>
+
 #include <unistd.h>
+
+#include <iostream>
 
 // dynamic loading for custom operators
 #ifndef _WIN32
 #include <dlfcn.h>
 
-tflmc::custom_operator_handle tflmc::LoadCustom(tflite::AllOpsResolver *resolver) {
-  const char* filename = "./libtflite_micro_custom.so";
+tflmc::custom_operator_handle tflmc::LoadCustom(
+    tflite::AllOpsResolver *resolver) {
+  const char *filename = "./libtflite_micro_custom.so";
   void *custom_lib = dlopen(filename, RTLD_NOW);
   if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver *res);
+    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver * res);
     // see "man dlopen" for an explanation of this nasty construct
-    *(void **) (&reg_fun) = dlsym(custom_lib, "register_custom");
+    *(void **)(&reg_fun) = dlsym(custom_lib, "register_custom");
     char *error = dlerror();
     if (error) {
       std::cerr << filename << ": " << error << "\n";
-    }
-    else if (reg_fun) {
+    } else if (reg_fun) {
       (*reg_fun)(resolver);
     }
-  }
-  else if (!access(filename, 0)) { // only output error if the plugin exists
+  } else if (!access(filename, 0)) {  // only output error if the plugin exists
     char *error = dlerror();
     if (error) {
       std::cerr << filename << ": " << error << "\n";
@@ -53,10 +54,10 @@ void tflmc::UnloadCustom(tflmc::custom_operator_handle custom_lib) {
 
 #else
 // anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
-tflmc::custom_operator_handle tflmc::LoadCustom(tflite::AllOpsResolver *resolver) {
-    return nullptr;
+tflmc::custom_operator_handle tflmc::LoadCustom(
+    tflite::AllOpsResolver *resolver) {
+  return nullptr;
 }
 
-void tflmc::UnloadCustom(tflmc::custom_operator_handle) {
-}
+void tflmc::UnloadCustom(tflmc::custom_operator_handle) {}
 #endif
