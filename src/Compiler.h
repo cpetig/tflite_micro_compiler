@@ -41,11 +41,10 @@ class Compiler {
     std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
       if (code != other.code) return false;
-      if (code == tflite::BuiltinOperator_CUSTOM)
-      {
+      if (code == tflite::BuiltinOperator_CUSTOM) {
         return custom_name == other.custom_name;
-      }
-      else return true;
+      } else
+        return true;
     }
   };
   struct NodeInfo {

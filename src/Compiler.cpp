@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "CodeWriter.h"
+#include "CustomOperators.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
-#include "CustomOperators.h"
 #include "tensorflow/lite/version.h"
 
 bool tflmc::CompileFile(const std::string &modelFileName,
@@ -187,7 +187,8 @@ namespace micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-        wr << "extern TfLiteRegistration *Register_"<< registrations_[i].custom_name << "(void);\n";
+        wr << "extern TfLiteRegistration *Register_"
+           << registrations_[i].custom_name << "(void);\n";
       }
     }
     wr << R"(}  // namespace micro
@@ -209,10 +210,10 @@ enum used_operators_e {
   for (size_t i = 0; i < registrations_.size(); i++) {
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
       wr << "OP_" << registrations_[i].custom_name << ", ";
+    } else {
+      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code)
+         << ", ";
     }
-    else {
-      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code) << ", ";
-    }  
   }
   wr << R"( OP_LAST
 };
@@ -255,9 +256,10 @@ TfLiteNode g_nodes[)"
     auto &node = nodes_[i].node;
     auto &regInfo = registrations_[nodes_[i].regIndex];
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "uint8_t " << prefix_ + "opdata" + std::to_string(i) << "[" << node.custom_initial_data_size << "] = { ";
+      wr << "uint8_t " << prefix_ + "opdata" + std::to_string(i) << "["
+         << node.custom_initial_data_size << "] = { ";
       for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
-        wr << int(((uint8_t const*)node.custom_initial_data)[i]) << ", ";
+        wr << int(((uint8_t const *)node.custom_initial_data)[i]) << ", ";
       wr << " }; /* custom_initial_data */\n";
     } else {
       wr.writeBuiltin(regInfo.code, node.builtin_data,
@@ -278,16 +280,14 @@ TfLiteNode g_nodes[)"
          << ((uintptr_t)t->data.data - (uintptr_t)arena_buf_.data());
     }
     wr << ", "
-       << "(TfLiteIntArray*)&" << prefix_ << "tensor_dimension"
-       << i << ", ";
+       << "(TfLiteIntArray*)&" << prefix_ << "tensor_dimension" << i << ", ";
     wr << t->bytes << ", ";
     wr << "\"" << ((t->name) ? t->name : "NO-NAME") << "\", ";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << "{kTfLiteAffineQuantization, "
             "const_cast<void*>(static_cast<const void*>(&"
          << prefix_ << "quant" << i << "))}, ";
-    }
-    else {
+    } else {
       wr << "{kTfLiteNoQuantization, nullptr}, ";
     }
     wr << "},\n";
@@ -299,20 +299,21 @@ TfLiteNode g_nodes[)"
     wr << "  { (TfLiteIntArray*)&" << prefix_ << "inputs" << i << ", ";
     wr << "(TfLiteIntArray*)&" << prefix_ << "outputs" << i << ", ";
     // TODO: Is this cast safe or does the data need to be non-const?
-    // CP: I think so (as it typically just carries the trained operator parameters)
-    // CP: Also if it were written to, we would see a segfault (write to text segment)
+    // CP: I think so (as it typically just carries the trained operator
+    // parameters) CP: Also if it were written to, we would see a segfault
+    // (write to text segment)
     if (nodes_[i].node.builtin_data || nodes_[i].node.custom_initial_data) {
-      wr << "const_cast<void*>(static_cast<const void*>(&"
-         << prefix_ << "opdata" << i << ")), ";
+      wr << "const_cast<void*>(static_cast<const void*>(&" << prefix_
+         << "opdata" << i << ")), ";
     } else {
       wr << "nullptr, ";
     }
     auto regI = nodes_[i].regIndex;
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
       wr << "OP_" << registrations_[i].custom_name << ", ";
-    }
-    else {
-      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code) << ", ";
+    } else {
+      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
+         << ", ";
     }
     wr << "},\n";
   }
@@ -337,7 +338,8 @@ TfLiteStatus )"
 )";
   wr << "  g_ctx.tensors_size = " << tensors_.size() << ";\n";
   // TODO: Do we really support variable tensors?
-  // TODO: Do we encounter other than kTfLiteMmapRo and kTfLiteArenaRw, if so we need to store the type separately.
+  // TODO: Do we encounter other than kTfLiteMmapRo and kTfLiteArenaRw, if so we
+  // need to store the type separately.
   wr << "  for(size_t i = 0; i < " << tensors_.size() << R"(; ++i) {
     g_tensors[i].data.data = tensors[i].data;
     g_tensors[i].type = tensors[i].type;
@@ -360,8 +362,8 @@ TfLiteStatus )"
     } else {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
     }
-    wr << "  g_registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
-        << opName << "();\n";
+    wr << "  g_registrations[OP_" << opName
+       << "] = tflite::ops::micro::Register_" << opName << "();\n";
   }
   wr << "\n";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
@@ -430,7 +432,8 @@ TfLiteTensor* )"
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
-  for(size_t i = 0; i < )" << nodes_.size() << R"(; ++i) {
+  for(size_t i = 0; i < )"
+      << nodes_.size() << R"(; ++i) {
     TfLiteStatus status = g_registrations[nodes[i].used_op_index]->invoke(&g_ctx, &g_nodes[i]);
     if (status != kTfLiteOk) {
       return status;

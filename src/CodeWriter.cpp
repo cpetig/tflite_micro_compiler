@@ -122,8 +122,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
 
 void tflmc::CodeWriter::writeIntArray(const TfLiteIntArray& arr,
                                       const std::string& name) {
-  out_ << "const TfArray<" << arr.size << ", int> " << name << " = { " << arr.size
-       << ", { ";
+  out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
+       << arr.size << ", { ";
   writeIntArrayData(arr);
   out_ << " } };\n";
 }
@@ -232,14 +232,14 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
                                           const std::string& name) {
   if (q.type == kTfLiteAffineQuantization) {
     auto aq = (TfLiteAffineQuantization const*)q.params;
-    out_ << "const TfArray<" << aq->scale->size << ", float> "
-         << name << "_scale = { " << aq->scale->size << ", { ";
+    out_ << "const TfArray<" << aq->scale->size << ", float> " << name
+         << "_scale = { " << aq->scale->size << ", { ";
     for (int i = 0; i < aq->scale->size; i++) {
       out_ << aq->scale->data[i] << ", ";
     }
     out_ << "} };\n";
-    out_ << "const TfArray<" << aq->zero_point->size
-         << ", int> " << name << "_zero = { " << aq->zero_point->size << ", { ";
+    out_ << "const TfArray<" << aq->zero_point->size << ", int> " << name
+         << "_zero = { " << aq->zero_point->size << ", { ";
     writeIntArrayData(*aq->zero_point);
     out_ << " } };\n";
     out_ << "const TfLiteAffineQuantization " << name << " = { "

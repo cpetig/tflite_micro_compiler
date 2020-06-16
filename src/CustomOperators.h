@@ -21,8 +21,8 @@ limitations under the License.
 namespace tflmc {
 typedef void* custom_operator_handle;
 
-custom_operator_handle LoadCustom(tflite::AllOpsResolver *res);
+custom_operator_handle LoadCustom(tflite::AllOpsResolver* res);
 void UnloadCustom(custom_operator_handle);
-}
+}  // namespace tflmc
 
 #endif

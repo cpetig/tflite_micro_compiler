@@ -3,7 +3,9 @@
 
 int main(int argc, char *argv[]) {
   if (argc < 3 || argc > 4) {
-    printf("Usage: %s modelFile.tflite outFile.cpp [NamingPrefix = \"model_\"]\n", argv[0]);
+    printf(
+        "Usage: %s modelFile.tflite outFile.cpp [NamingPrefix = \"model_\"]\n",
+        argv[0]);
     return 1;
   }
 
