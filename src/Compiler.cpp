@@ -429,6 +429,14 @@ TfLiteTensor* )"
       << prefix_ << R"(output(int index) {
   return &g_ctx.tensors[outTensorIndices[index]];
 }
+int )" << prefix_
+      << R"(output_dims_len(int index) {
+  return g_ctx.tensors[outTensorIndices[index]].dims->data[0];
+}
+const int *)"
+      << prefix_ << R"(output_dims(int index) {
+  return &g_ctx.tensors[outTensorIndices[index]].dims->data[1];
+}
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
