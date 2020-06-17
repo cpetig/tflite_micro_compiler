@@ -37,22 +37,22 @@ ENDIF()
 SET(TF_LIB tensorflow-microlite)
 
 SET(COMPILER_HEADERS
-    src/CodeWriter.h
-    src/Compiler.h
-    src/CustomOperators.h
-    src/MemMap.h
-    src/RecordAllocations.h
-    src/TypeToString.h
+    ${PROJECT_SOURCE_DIR}/src/CodeWriter.h
+    ${PROJECT_SOURCE_DIR}/src/Compiler.h
+    ${PROJECT_SOURCE_DIR}/src/CustomOperators.h
+    ${PROJECT_SOURCE_DIR}/src/MemMap.h
+    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.h
+    ${PROJECT_SOURCE_DIR}/src/TypeToString.h
     )
 
 SET(COMPILER_SRCS
-    src/CodeWriter.cpp
-    src/Compiler.cpp
-    src/CustomOperators.cpp
-    src/MemMap.cpp
-    src/RecordAllocations.cpp
-    src/TypeToString.cpp
-    src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/CodeWriter.cpp
+    ${PROJECT_SOURCE_DIR}/src/Compiler.cpp
+    ${PROJECT_SOURCE_DIR}/src/CustomOperators.cpp
+    ${PROJECT_SOURCE_DIR}/src/MemMap.cpp
+    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cpp
+    ${PROJECT_SOURCE_DIR}/src/TypeToString.cpp
+    ${PROJECT_SOURCE_DIR}/src/main.cpp
     )
 
 ADD_LIBRARY(${PROJECT_NAME} STATIC
