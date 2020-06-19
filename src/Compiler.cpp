@@ -229,10 +229,7 @@ struct TensorInfo_t { // subset of TfLiteTensor used for initialization from con
   TfLiteType type;
   void* data;
   TfLiteIntArray* dims;
-  // TfLiteQuantizationParams params;
-  // TfLiteAllocationType allocation_type;
   size_t bytes;
-  const char* name;
   TfLiteQuantization quantization;
 };
 struct NodeInfo_t { // subset of TfLiteNode used for initialization from constant memory
@@ -288,7 +285,6 @@ TfLiteNode tflNodes[)"
     wr << ", "
        << "(TfLiteIntArray*)&tensor_dimension" << i << ", ";
     wr << t->bytes << ", ";
-    wr << "\"" << ((t->name) ? t->name : "NO-NAME") << "\", ";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << "{kTfLiteAffineQuantization, "
             "const_cast<void*>(static_cast<const void*>(&quant"
