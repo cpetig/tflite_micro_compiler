@@ -2,6 +2,7 @@
 #include "Compiler.h"
 
 #include <fstream>
+#include <regex>
 #include <vector>
 
 #include "CodeWriter.h"
@@ -29,9 +30,16 @@ bool tflmc::CompileFile(const std::string &modelFileName,
     return false;
   }
 
+  std::ofstream outHeaderFile(outFileName + ".h");
+  if (!outHeaderFile) {
+    std::cerr << "Failed to create output header file\n";
+    return false;
+  }
+
   try {
     Compiler compiler(model_data.data(), prefix);
     compiler.writeSource(outFile);
+    compiler.writeHeader(outHeaderFile);
     return true;
   } catch (const std::exception &e) {
     std::cerr << e.what() << "\n";
@@ -201,7 +209,7 @@ namespace micro {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
-uint8_t g_tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
+uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -234,77 +242,74 @@ struct NodeInfo_t { // subset of TfLiteNode used for initialization from constan
   used_operators_e used_op_index;
 };
 
-TfLiteContext g_ctx{};
-TfLiteTensor g_tensors[)"
+TfLiteContext ctx{};
+TfLiteTensor tflTensors[)"
      << tensors_.size() << R"(];
-TfLiteRegistration *g_registrations[OP_LAST];
-TfLiteNode g_nodes[)"
+TfLiteRegistration *registrations[OP_LAST];
+TfLiteNode tflNodes[)"
      << nodes_.size() << R"(];
 
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
     auto &t = tensors_[i].tensor;
     if (t->allocation_type == kTfLiteMmapRo) {
-      wr.writeTensor(*t, prefix_ + "tensor_data" + std::to_string(i));
+      wr.writeTensor(*t, "tensor_data" + std::to_string(i));
     }
-    wr.writeIntArray(*t->dims,
-                     prefix_ + "tensor_dimension" + std::to_string(i));
-    wr.writeQuantization(t->quantization,
-                         prefix_ + "quant" + std::to_string(i));
+    wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
+    wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
   }
   for (size_t i = 0; i < nodes_.size(); i++) {
     auto &node = nodes_[i].node;
     auto &regInfo = registrations_[nodes_[i].regIndex];
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "uint8_t " << prefix_ + "opdata" + std::to_string(i) << "["
+      wr << "uint8_t opdata" + std::to_string(i) << "["
          << node.custom_initial_data_size << "] = { ";
       for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
         wr << int(((uint8_t const *)node.custom_initial_data)[i]) << ", ";
       wr << " }; /* custom_initial_data */\n";
     } else {
       wr.writeBuiltin(regInfo.code, node.builtin_data,
-                      prefix_ + "opdata" + std::to_string(i));
+                      "opdata" + std::to_string(i));
     }
-    wr.writeIntArray(*node.inputs, prefix_ + "inputs" + std::to_string(i));
-    wr.writeIntArray(*node.outputs, prefix_ + "outputs" + std::to_string(i));
+    wr.writeIntArray(*node.inputs, "inputs" + std::to_string(i));
+    wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
   }
-  wr << R"(const TensorInfo_t tensors[] = {
+  wr << R"(const TensorInfo_t tensorData[] = {
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
     auto &t = tensors_[i].tensor;
     wr << "  { " << tflmc::to_string(t->type) << ", ";
     if (t->allocation_type == kTfLiteMmapRo) {
-      wr << "(void*)" << prefix_ << "tensor_data" << i;
+      wr << "(void*)tensor_data" << i;
     } else {
-      wr << "g_tensor_arena + "
+      wr << "tensor_arena + "
          << ((uintptr_t)t->data.data - (uintptr_t)arena_buf_.data());
     }
     wr << ", "
-       << "(TfLiteIntArray*)&" << prefix_ << "tensor_dimension" << i << ", ";
+       << "(TfLiteIntArray*)&tensor_dimension" << i << ", ";
     wr << t->bytes << ", ";
     wr << "\"" << ((t->name) ? t->name : "NO-NAME") << "\", ";
     if (t->quantization.type == kTfLiteAffineQuantization) {
       wr << "{kTfLiteAffineQuantization, "
-            "const_cast<void*>(static_cast<const void*>(&"
-         << prefix_ << "quant" << i << "))}, ";
+            "const_cast<void*>(static_cast<const void*>(&quant"
+         << i << "))}, ";
     } else {
       wr << "{kTfLiteNoQuantization, nullptr}, ";
     }
     wr << "},\n";
   }
   wr << "};";
-  wr << R"(const NodeInfo_t nodes[] = {
+  wr << R"(const NodeInfo_t nodeData[] = {
 )";
   for (size_t i = 0; i < nodes_.size(); i++) {
-    wr << "  { (TfLiteIntArray*)&" << prefix_ << "inputs" << i << ", ";
-    wr << "(TfLiteIntArray*)&" << prefix_ << "outputs" << i << ", ";
+    wr << "  { (TfLiteIntArray*)&inputs" << i << ", ";
+    wr << "(TfLiteIntArray*)&outputs" << i << ", ";
     // TODO: Is this cast safe or does the data need to be non-const?
     // CP: I think so (as it typically just carries the trained operator
     // parameters) CP: Also if it were written to, we would see a segfault
     // (write to text segment)
     if (nodes_[i].node.builtin_data || nodes_[i].node.custom_initial_data) {
-      wr << "const_cast<void*>(static_cast<const void*>(&" << prefix_
-         << "opdata" << i << ")), ";
+      wr << "const_cast<void*>(static_cast<const void*>(&opdata" << i << ")), ";
     } else {
       wr << "nullptr, ";
     }
@@ -323,7 +328,7 @@ TfLiteNode g_nodes[)"
   wr << R"(
 static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes, void** ptr) {
-  static uint8_t *AllocPtr = g_tensor_arena + sizeof(g_tensor_arena);
+  static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
   *ptr = AllocPtr;
@@ -333,25 +338,25 @@ static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx,
 
 TfLiteStatus )"
      << prefix_ << R"(init() {
-  g_ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
-  g_ctx.tensors = g_tensors;
+  ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
+  ctx.tensors = tflTensors;
 )";
-  wr << "  g_ctx.tensors_size = " << tensors_.size() << ";\n";
+  wr << "  ctx.tensors_size = " << tensors_.size() << ";\n";
   // TODO: Do we really support variable tensors?
   // TODO: Do we encounter other than kTfLiteMmapRo and kTfLiteArenaRw, if so we
   // need to store the type separately.
   wr << "  for(size_t i = 0; i < " << tensors_.size() << R"(; ++i) {
-    g_tensors[i].data.data = tensors[i].data;
-    g_tensors[i].type = tensors[i].type;
-    g_tensors[i].is_variable = false;
-    g_tensors[i].allocation_type = (g_tensor_arena <= tensors[i].data && tensors[i].data < g_tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
-    g_tensors[i].bytes = tensors[i].bytes;
-    g_tensors[i].dims = tensors[i].dims;
-    g_tensors[i].quantization = tensors[i].quantization;
-    if (tensors[i].quantization.type == kTfLiteAffineQuantization) {
-      TfLiteAffineQuantization const* quant = ((TfLiteAffineQuantization const*)(tensors[i].quantization.params));
-      g_tensors[i].params.scale = quant->scale->data[0];
-      g_tensors[i].params.zero_point = quant->zero_point->data[0];
+    tflTensors[i].data.data = tensorData[i].data;
+    tflTensors[i].type = tensorData[i].type;
+    tflTensors[i].is_variable = false;
+    tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
+    tflTensors[i].bytes = tensorData[i].bytes;
+    tflTensors[i].dims = tensorData[i].dims;
+    tflTensors[i].quantization = tensorData[i].quantization;
+    if (tflTensors[i].quantization.type == kTfLiteAffineQuantization) {
+      TfLiteAffineQuantization const* quant = ((TfLiteAffineQuantization const*)(tensorData[i].quantization.params));
+      tflTensors[i].params.scale = quant->scale->data[0];
+      tflTensors[i].params.zero_point = quant->zero_point->data[0];
     }
   }
 )";
@@ -362,26 +367,26 @@ TfLiteStatus )"
     } else {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
     }
-    wr << "  g_registrations[OP_" << opName
-       << "] = tflite::ops::micro::Register_" << opName << "();\n";
+    wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
+       << opName << "();\n";
   }
   wr << "\n";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
-    g_nodes[i].inputs = nodes[i].inputs;
-    g_nodes[i].outputs = nodes[i].outputs;
-    g_nodes[i].temporaries = nullptr;
-    g_nodes[i].builtin_data = nodes[i].builtin_data;
-    g_nodes[i].custom_initial_data = nullptr;
-    g_nodes[i].custom_initial_data_size = 0;
-    g_nodes[i].delegate = nullptr;
-    if (g_registrations[nodes[i].used_op_index]->init) {
-      g_nodes[i].user_data = g_registrations[nodes[i].used_op_index]->init(&g_ctx, (const char*)g_nodes[i].builtin_data, 0);
+    tflNodes[i].inputs = nodeData[i].inputs;
+    tflNodes[i].outputs = nodeData[i].outputs;
+    tflNodes[i].temporaries = nullptr;
+    tflNodes[i].builtin_data = nodeData[i].builtin_data;
+    tflNodes[i].custom_initial_data = nullptr;
+    tflNodes[i].custom_initial_data_size = 0;
+    tflNodes[i].delegate = nullptr;
+    if (registrations[nodeData[i].used_op_index]->init) {
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
     }
   }
 )";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
-    if (g_registrations[nodes[i].used_op_index]->prepare) {
-      TfLiteStatus status = g_registrations[nodes[i].used_op_index]->prepare(&g_ctx, &g_nodes[i]);
+    if (registrations[nodeData[i].used_op_index]->prepare) {
+      TfLiteStatus status = registrations[nodeData[i].used_op_index]->prepare(&ctx, &tflNodes[i]);
       if (status != kTfLiteOk) {
         return status;
       }
@@ -397,17 +402,9 @@ static const int inTensorIndices[] = {
   }
   out << R"(
 };
-void *)"
-      << prefix_ << R"(input_ptr(int index) {
-  return g_ctx.tensors[inTensorIndices[index]].data.data;
-}
-size_t )"
-      << prefix_ << R"(input_size(int index) {
-  return g_ctx.tensors[inTensorIndices[index]].bytes;
-}
 TfLiteTensor* )"
       << prefix_ << R"(input(int index) {
-  return &g_ctx.tensors[inTensorIndices[index]];
+  return &ctx.tensors[inTensorIndices[index]];
 }
 
 static const int outTensorIndices[] = {
@@ -417,24 +414,16 @@ static const int outTensorIndices[] = {
   }
   out << R"(
 };
-const void *)"
-      << prefix_ << R"(output_ptr(int index) {
-  return g_ctx.tensors[outTensorIndices[index]].data.data;
-}
-size_t )"
-      << prefix_ << R"(output_size(int index) {
-  return g_ctx.tensors[outTensorIndices[index]].bytes;
-}
 TfLiteTensor* )"
       << prefix_ << R"(output(int index) {
-  return &g_ctx.tensors[outTensorIndices[index]];
+  return &ctx.tensors[outTensorIndices[index]];
 }
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
-    TfLiteStatus status = g_registrations[nodes[i].used_op_index]->invoke(&g_ctx, &g_nodes[i]);
+    TfLiteStatus status = registrations[nodeData[i].used_op_index]->invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
       return status;
     }
@@ -442,6 +431,70 @@ TfLiteStatus )"
   return kTfLiteOk;
 }
 )";
+}
+
+void tflmc::Compiler::writeHeader(std::ostream &out) {
+  tflmc::CodeWriter wr(out, subgraph_);
+
+  std::string code = R"(
+#ifndef %PREFIX%GEN_H
+#define %PREFIX%GEN_H
+
+#include "tensorflow/lite/c/common.h"
+
+// Sets up the model with init and prepare steps.
+TfLiteStatus %PREFIX%init();
+// Returns the input tensor with the given index.
+TfLiteTensor *%PREFIX%input(int index);
+// Returns the output tensor with the given index.
+TfLiteTensor *%PREFIX%output(int index);
+// Runs inference for the model.
+TfLiteStatus %PREFIX%invoke();
+
+// Returns the number of input tensors.
+inline size_t %PREFIX%inputs() {
+  return )" + std::to_string(inputTensorIndices_.size()) +
+                     R"(;
+}
+// Returns the number of output tensors.
+inline size_t %PREFIX%outputs() {
+  return )" + std::to_string(outputTensorIndices_.size()) +
+                     R"(;
+}
+
+inline void *%PREFIX%input_ptr(int index) {
+  return %PREFIX%input(index)->data.data;
+}
+inline size_t %PREFIX%input_size(int index) {
+  return %PREFIX%input(index)->bytes;
+}
+inline int %PREFIX%input_dims_len(int index) {
+  return %PREFIX%input(index)->dims->data[0];
+}
+inline int *%PREFIX%input_dims(int index) {
+  return &%PREFIX%input(index)->dims->data[1];
+}
+
+inline void *%PREFIX%output_ptr(int index) {
+  return %PREFIX%output(index)->data.data;
+}
+inline size_t %PREFIX%output_size(int index) {
+  return %PREFIX%output(index)->bytes;
+}
+inline int %PREFIX%output_dims_len(int index) {
+  return %PREFIX%output(index)->dims->data[0];
+}
+inline int *%PREFIX%output_dims(int index) {
+  return &%PREFIX%output(index)->dims->data[1];
+}
+
+#endif
+)";
+
+  static std::regex rePrefix("%PREFIX%");
+  code = std::regex_replace(code, rePrefix, prefix_);
+
+  wr << code;
 }
 
 std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
