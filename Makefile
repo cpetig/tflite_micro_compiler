@@ -15,6 +15,11 @@ compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/Reco
 
 clean: clean-compiler clean-examples
 
+FORMAT_FILES := $(shell find src -regex '.*\(h\|cpp\)')
+
+format: 
+	clang-format -i $(FORMAT_FILES)
+
 .PHONY: examples clean-examples clean-compiler
 examples:
 	cd examples && $(MAKE)
