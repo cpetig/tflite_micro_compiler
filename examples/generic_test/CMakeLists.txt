@@ -15,6 +15,7 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
     ${TF_DIR}
     ${TFLMD_SRC}/flatbuffers/include
     ${TFLMD_SRC}/ruy
+    ../../build
 )
 
 IF(WIN32)
