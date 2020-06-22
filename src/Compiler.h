@@ -51,6 +51,19 @@ class Compiler {
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
+  template <class T>
+  struct Option {
+    bool None = true;
+    T Some = T();
+    void operator=(T const &val) {
+      None = false;
+      Some = val;
+    }
+    void clear() {
+      Some = T();
+      None = true;
+    }
+  };
 
  private:
   std::string prefix_;
@@ -70,6 +83,9 @@ class Compiler {
   std::vector<int32_t> outputTensorIndices_;
 
   bool has_custom_ops = false;
+  bool has_quantization = false;
+  Option<TfLiteType> common_tensor_type;
+  Option<bool> common_tensor_is_variable;
 };
 
 }  // namespace tflmc

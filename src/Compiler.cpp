@@ -103,6 +103,10 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   ptrdiff_t ramTensorBufferSize = 0;
   ptrdiff_t romOffset = 0;
+  if (interpreter_->tensors_size() > 0) {
+    common_tensor_type = interpreter_->tensor(0)->type;
+    common_tensor_is_variable = interpreter_->tensor(0)->is_variable;
+  }
   for (size_t i = 0; i < interpreter_->tensors_size(); i++) {
     auto tensor = interpreter_->tensor(i);
     tensors_.push_back({tensor});
@@ -114,6 +118,19 @@ bool tflmc::Compiler::init(const void *modelData) {
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
+    }
+    // determine whether we need to individually set these properties for each
+    // tensor
+    if ((!has_quantization) &&
+        tensor->quantization.type != kTfLiteNoQuantization) {
+      has_quantization = true;
+    }
+    if ((!common_tensor_type.None) && common_tensor_type.Some != tensor->type) {
+      common_tensor_type.clear();
+    }
+    if ((!common_tensor_is_variable.None) &&
+        common_tensor_is_variable.Some != tensor->is_variable) {
+      common_tensor_is_variable.clear();
     }
   }
 
@@ -226,18 +243,31 @@ enum used_operators_e {
   wr << R"( OP_LAST
 };
 struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constant memory
-  TfLiteType type;
-  void* data;
+)";
+  if (common_tensor_type.None) {
+    wr << "  TfLiteType type;\n";
+  }
+  wr << R"(  void* data;
   TfLiteIntArray* dims;
   size_t bytes;
-  TfLiteQuantization quantization;
-};
+)";
+  if (has_quantization) {
+    wr << "  TfLiteQuantization quantization;\n";
+  }
+  if (common_tensor_is_variable.None) {
+    wr << "  bool is_variable;\n";
+  }
+  wr << R"(};
 struct NodeInfo_t { // subset of TfLiteNode used for initialization from constant memory
   struct TfLiteIntArray* inputs;
   struct TfLiteIntArray* outputs;
   void* builtin_data;
   used_operators_e used_op_index;
-};
+)";
+  if (has_custom_ops) {
+    wr << "  int custom_initial_data_size;\n";
+  }
+  wr << R"(};
 
 TfLiteContext ctx{};
 TfLiteTensor tflTensors[)"
@@ -275,7 +305,10 @@ TfLiteNode tflNodes[)"
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
     auto &t = tensors_[i].tensor;
-    wr << "  { " << tflmc::to_string(t->type) << ", ";
+    wr << "  { ";
+    if (common_tensor_type.None) {
+      wr << tflmc::to_string(t->type) << ", ";
+    }
     if (t->allocation_type == kTfLiteMmapRo) {
       wr << "(void*)tensor_data" << i;
     } else {
@@ -285,12 +318,18 @@ TfLiteNode tflNodes[)"
     wr << ", "
        << "(TfLiteIntArray*)&tensor_dimension" << i << ", ";
     wr << t->bytes << ", ";
-    if (t->quantization.type == kTfLiteAffineQuantization) {
-      wr << "{kTfLiteAffineQuantization, "
-            "const_cast<void*>(static_cast<const void*>(&quant"
-         << i << "))}, ";
-    } else {
-      wr << "{kTfLiteNoQuantization, nullptr}, ";
+    if (has_quantization) {
+      if (t->quantization.type == kTfLiteAffineQuantization) {
+        wr << "{kTfLiteAffineQuantization, "
+              "const_cast<void*>(static_cast<const void*>(&quant"
+           << i << "))}, ";
+      } else {
+        wr << "{kTfLiteNoQuantization, nullptr}, ";
+      }
+    }
+    if (common_tensor_is_variable.None) {
+      wr << std::to_string(t->is_variable)
+         << ", ";  // TODO: is there a bool to string?
     }
     wr << "},\n";
   }
@@ -311,10 +350,14 @@ TfLiteNode tflNodes[)"
     }
     auto regI = nodes_[i].regIndex;
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "OP_" << registrations_[i].custom_name << ", ";
+      wr << "OP_" << registrations_[i].custom_name << ", "
+         << nodes_[i].node.custom_initial_data_size << ", ";
     } else {
       wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
          << ", ";
+      if (has_custom_ops) {
+        wr << "0, ";
+      }
     }
     wr << "},\n";
   }
@@ -343,18 +386,35 @@ TfLiteStatus )"
   // need to store the type separately.
   wr << "  for(size_t i = 0; i < " << tensors_.size() << R"(; ++i) {
     tflTensors[i].data.data = tensorData[i].data;
-    tflTensors[i].type = tensorData[i].type;
-    tflTensors[i].is_variable = false;
-    tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
+)";
+  if (common_tensor_type.None) {
+    wr << "    tflTensors[i].type = tensorData[i].type;\n";
+  } else {
+    wr << "    tflTensors[i].type = "
+       << tflmc::to_string(common_tensor_type.Some) << ";\n";
+  }
+  if (common_tensor_is_variable.None) {
+    wr << "    tflTensors[i].is_variable = tensorData[i].is_variable;\n";
+  } else {
+    wr << "    tflTensors[i].is_variable = "
+       << std::to_string(common_tensor_is_variable.Some) << ";\n";
+  }
+  wr << R"(    tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
     tflTensors[i].bytes = tensorData[i].bytes;
     tflTensors[i].dims = tensorData[i].dims;
-    tflTensors[i].quantization = tensorData[i].quantization;
+)";
+  if (has_quantization) {
+    wr << R"(    tflTensors[i].quantization = tensorData[i].quantization;
     if (tflTensors[i].quantization.type == kTfLiteAffineQuantization) {
       TfLiteAffineQuantization const* quant = ((TfLiteAffineQuantization const*)(tensorData[i].quantization.params));
       tflTensors[i].params.scale = quant->scale->data[0];
       tflTensors[i].params.zero_point = quant->zero_point->data[0];
     }
+)";
+  } else {
+    wr << "    tflTensors[i].quantization.type = kTfLiteNoQuantization;\n";
   }
+  wr << R"(  }
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
     std::string opName;
@@ -376,7 +436,13 @@ TfLiteStatus )"
     tflNodes[i].custom_initial_data_size = 0;
     tflNodes[i].delegate = nullptr;
     if (registrations[nodeData[i].used_op_index]->init) {
-      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, )";
+  if (has_custom_ops) {
+    wr << "nodeData[i].custom_initial_data_size";
+  } else {
+    wr << '0';
+  }
+  wr << R"();
     }
   }
 )";
