@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 19.06.2020 20:49:17
+// Generated on: 30.06.2020 20:01:18
 
 #include <cassert>
 
@@ -170,7 +170,7 @@ TfLiteStatus hello_init() {
   for(size_t i = 0; i < 12; ++i) {
     tflTensors[i].data.data = tensorData[i].data;
     tflTensors[i].type = tensorData[i].type;
-    tflTensors[i].is_variable = false;
+    tflTensors[i].is_variable = 0;
     tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
     tflTensors[i].bytes = tensorData[i].bytes;
     tflTensors[i].dims = tensorData[i].dims;
@@ -188,11 +188,9 @@ TfLiteStatus hello_init() {
   for(size_t i = 0; i < 5; ++i) {
     tflNodes[i].inputs = nodeData[i].inputs;
     tflNodes[i].outputs = nodeData[i].outputs;
-    tflNodes[i].temporaries = nullptr;
     tflNodes[i].builtin_data = nodeData[i].builtin_data;
     tflNodes[i].custom_initial_data = nullptr;
     tflNodes[i].custom_initial_data_size = 0;
-    tflNodes[i].delegate = nullptr;
     if (registrations[nodeData[i].used_op_index]->init) {
       tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
     }

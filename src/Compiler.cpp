@@ -430,11 +430,9 @@ TfLiteStatus )"
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
     tflNodes[i].inputs = nodeData[i].inputs;
     tflNodes[i].outputs = nodeData[i].outputs;
-    tflNodes[i].temporaries = nullptr;
     tflNodes[i].builtin_data = nodeData[i].builtin_data;
     tflNodes[i].custom_initial_data = nullptr;
     tflNodes[i].custom_initial_data_size = 0;
-    tflNodes[i].delegate = nullptr;
     if (registrations[nodeData[i].used_op_index]->init) {
       tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, )";
   if (has_custom_ops) {
@@ -583,8 +581,8 @@ std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
 
     checkAndAdd(node->inputs, "in");
     checkAndAdd(node->outputs, "out");
-    checkAndAdd(node->intermediates, "int");
-    checkAndAdd(node->temporaries, "tmp");
+  //  checkAndAdd(node->intermediates, "int");
+  //  checkAndAdd(node->temporaries, "tmp");
   }
 
   return ss.str();
