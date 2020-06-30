@@ -16,17 +16,13 @@ limitations under the License.
 #include <iostream>
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
-
-extern void hello_init();
-extern void hello_invoke();
-extern TfLiteTensor* hello_input(int idx=0);
-extern TfLiteTensor* hello_output(int idx=0);
+#include "compiled_hello.cpp.h"
 
 void test_compiled(void) {
 	hello_init();
-	tflite::GetTensorData<float>(hello_input())[0]= 1.57f;
+	tflite::GetTensorData<float>(hello_input(0))[0]= 1.57f;
 	hello_invoke();
-	float out = tflite::GetTensorData<float>(hello_output())[0];
+	float out = tflite::GetTensorData<float>(hello_output(0))[0];
 	std::cerr << "compiled result " << out << std::endl;
 }
 

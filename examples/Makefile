@@ -13,7 +13,10 @@ all: hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
 clean:
 	$(RM) *.o hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
 
-mobilnet: mobilnet.o mobilenet_v1_0_25_160_quantized.o
+mobilenet: mobilenet.o mobilenet_v1_0_25_160_quantized.o gnu.o
+	$(CXX) -o $@ $^ ${LIBS}
+
+mobilenet_compiled: mobilenet2.o compiled_mobilenet.o gnu.o
 	$(CXX) -o $@ $^ ${LIBS}
 
 hello_world: hello_world.o hello_world_model.o
@@ -33,5 +36,5 @@ cifar10_compiled: truck.o cifar10_compiled.o cifar10_run_comp.o
 
 regenerate: ../compiler
 	../compiler hello_world.tflite compiled_hello.cpp hello_ 
-	../compiler mobilnet.tflite compiled_mobilnet.cpp mobilnet_
+	../compiler mobilenet_v1_0_25_160_quantized.tflite compiled_mobilenet.cpp mobilenet_
 	../compiler cifar10.tflite cifar10_compiled.cc cifar_

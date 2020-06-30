@@ -16,6 +16,7 @@ static uint8_t tensor_arena[tensor_arena_size];
 
 extern "C" const unsigned char __1_tflite[];
 // extern "C" const unsigned int __1_tflite_len;
+extern "C" const unsigned char gnu_ppm[];
 
 // Set up logging.
 static tflite::ErrorReporter* error_reporter = nullptr;
@@ -68,13 +69,22 @@ void exit(void) {
 
 void run() {
   TfLiteTensor* model_input = interpreter->input(0);
-  for (uint32_t j = 0; j < model_input->dims->data[1]; ++j)
-    model_input->data.f[j] = 0;
+  memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
 
   TfLiteStatus invoke_status = interpreter->Invoke();
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
   }
+  TfLiteTensor* model_output = interpreter->output(0);
+  uint32_t best=0;
+  uint32_t bestval=model_output->data.uint8[0];
+  for (uint32_t i=1;i<1001;++i) {
+    if (model_output->data.uint8[i]>bestval) {
+      bestval= model_output->data.uint8[i];
+      best=i;
+    }
+  }
+  printf("Best match is %d with %.1f%%\n", best, bestval * (100/256.0f));
 }
 
 int main(int argc, char** argv) {
