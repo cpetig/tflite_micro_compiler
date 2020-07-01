@@ -10,5 +10,5 @@ GET_FILENAME_COMPONENT(HELLO_WORLD_MODEL
 )
 
 ADD_EXAMPLE(hello_world ${HELLO_WORLD_MODEL})
-ADD_EXAMPLE(mobilnet mobilenet_v1_0_25_160_quantized.c)
+ADD_EXAMPLE(mobilenet mobilenet_v1_0_25_160_quantized.c gnu.c)
 ADD_EXAMPLE(cifar10 cifar10_model.c truck.c)

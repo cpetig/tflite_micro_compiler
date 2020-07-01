@@ -581,8 +581,8 @@ std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
 
     checkAndAdd(node->inputs, "in");
     checkAndAdd(node->outputs, "out");
-  //  checkAndAdd(node->intermediates, "int");
-  //  checkAndAdd(node->temporaries, "tmp");
+    //  checkAndAdd(node->intermediates, "int");
+    //  checkAndAdd(node->temporaries, "tmp");
   }
 
   return ss.str();
