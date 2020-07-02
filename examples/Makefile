@@ -8,7 +8,7 @@ CXXFLAGS=-g -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X8
 LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
 	-ltensorflow-microlite
 
-all: hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
+all: hello_world mobilenet hello_world_compiled cifar10 cifar10_compiled
 
 clean:
 	$(RM) *.o hello_world mobilnet hello_world_compiled cifar10 cifar10_compiled
