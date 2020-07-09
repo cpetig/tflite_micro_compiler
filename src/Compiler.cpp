@@ -349,8 +349,8 @@ TfLiteNode tflNodes[)"
       wr << "nullptr, ";
     }
     auto regI = nodes_[i].regIndex;
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "OP_" << registrations_[i].custom_name << ", "
+    if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
+      wr << "OP_" << registrations_[regI].custom_name << ", "
          << nodes_[i].node.custom_initial_data_size << ", ";
     } else {
       wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
