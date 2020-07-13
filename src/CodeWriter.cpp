@@ -111,7 +111,9 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);
-      out_ << "uint8_t " << name << "[" << datalen << "] = { ";
+      uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
+      out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
+           << "] = { ";
       for (uint32_t i = 0; i < datalen; ++i)
         out_ << int(((uint8_t const*)data)[i]) << ", ";
       out_ << " }; /* op type " << int(op) << " */";
@@ -149,7 +151,9 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
          << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
     return;
   }
-  out_ << "const " << tname << " " << name << "[" << t.dims->data[0];
+  uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
+  out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "["
+       << t.dims->data[0];
   for (uint32_t i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
   out_ << "] = { ";
   if (t.dims->size == 1)  // one dimension: Single line of data
@@ -220,7 +224,7 @@ void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
     // DUMP_TENSOR2(kTfLiteFloat16);
     DUMP_TENSOR2(kTfLiteFloat64, double, double);
     default: {
-      out_ << "const uint8_t " << name << "[" << t.bytes << "] = { ";
+      out_ << "const ALIGN(4) uint8_t " << name << "[" << t.bytes << "] = { ";
       for (size_t i = 0; i < t.bytes; i++)
         out_ << int((uint8_t)t.data.raw_const[i]) << ",";
       out_ << " };\n";

@@ -197,11 +197,17 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
   CodeWriter wr(out, subgraph_);
 
   wr << R"(
-#include <cassert>
-
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+
+#if defined __GNUC__
+#define ALIGN(X) __attribute__((aligned(X)))
+#elif defined _MSC_VER
+#define ALIGN(X) __declspec(align(X))
+#elif defined __TASKING__
+#define ALIGN(X) __align(X)
+#endif
 
 )";
   // declare custom registrations
@@ -226,7 +232,7 @@ namespace micro {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
-uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
+uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -289,7 +295,7 @@ TfLiteNode tflNodes[)"
     auto &node = nodes_[i].node;
     auto &regInfo = registrations_[nodes_[i].regIndex];
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "uint8_t opdata" + std::to_string(i) << "["
+      wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
          << node.custom_initial_data_size << "] = { ";
       for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
         wr << int(((uint8_t const *)node.custom_initial_data)[i]) << ", ";
