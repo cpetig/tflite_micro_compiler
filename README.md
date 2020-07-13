@@ -7,6 +7,8 @@ function calls assigned to the model, then dumps the tensor and node settings in
 file, eliminating the need for running the interpreter at each program start and for resolving the correct
 kernel at run time.
 
+An in depth explanation of the motivation and benefits is included in the matching [RFC](https://docs.google.com/document/d/1wDqC50sjCaWyQxsSn_Y-XAGh8-ozIgm2HDzX_b9DIyo/edit?usp=sharing).
+
 # Building
 
 ## CMake
