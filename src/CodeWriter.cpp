@@ -124,10 +124,14 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
 
 void tflmc::CodeWriter::writeIntArray(const TfLiteIntArray& arr,
                                       const std::string& name) {
-  out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
-       << arr.size << ", { ";
-  writeIntArrayData(arr);
-  out_ << " } };\n";
+  if (arr.size == 0) {
+    out_ << "const int " << name << " = 0; /* empty TfLiteIntArray */\n";
+  } else {
+    out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
+         << arr.size << ", { ";
+    writeIntArrayData(arr);
+    out_ << " } };\n";
+  }
 }
 
 void tflmc::CodeWriter::writeIntArrayData(const TfLiteIntArray& arr) {
