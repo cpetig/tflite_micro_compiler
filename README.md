@@ -14,7 +14,8 @@ An in depth explanation of the motivation and benefits is included in the matchi
 ## CMake
 
 Below the two methods of incorporating the TensorFlow sources into your build are
-explain.
+explained.
+
 The basic flow of building with CMake is
 
 ``` bash
@@ -25,7 +26,7 @@ make
 ```
 
 ### Examples 
-The examples cmake [here](examples/CMakeLists.txt) is by default not included due to issues with TensorFlow source code compatibility issues when using specific code versions.
+The examples cmake [here](examples/CMakeLists.txt) is by default not included due to issues with TensorFlow source code compatibility when using specific code versions.
 To enable building the examples pass `-DTF_EXAMPLES=ON` to CMake.
 
 ## Automatic TensorFlow Source Fetching
