@@ -218,7 +218,7 @@ namespace micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-        wr << "extern TfLiteRegistration Register_"
+        wr << "extern TfLiteRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
@@ -278,7 +278,7 @@ struct NodeInfo_t { // subset of TfLiteNode used for initialization from constan
 TfLiteContext ctx{};
 TfLiteTensor tflTensors[)"
      << tensors_.size() << R"(];
-TfLiteRegistration registrations[OP_LAST];
+TfLiteRegistration *registrations[OP_LAST];
 TfLiteNode tflNodes[)"
      << nodes_.size() << R"(];
 
@@ -439,8 +439,8 @@ TfLiteStatus )"
     tflNodes[i].builtin_data = nodeData[i].builtin_data;
     tflNodes[i].custom_initial_data = nullptr;
     tflNodes[i].custom_initial_data_size = 0;
-    if (registrations[nodeData[i].used_op_index].init) {
-      tflNodes[i].user_data = registrations[nodeData[i].used_op_index].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
+    if (registrations[nodeData[i].used_op_index]->init) {
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, )";
   if (has_custom_ops) {
     wr << "nodeData[i].custom_initial_data_size";
   } else {
@@ -451,8 +451,8 @@ TfLiteStatus )"
   }
 )";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
-    if (registrations[nodeData[i].used_op_index].prepare) {
-      TfLiteStatus status = registrations[nodeData[i].used_op_index].prepare(&ctx, &tflNodes[i]);
+    if (registrations[nodeData[i].used_op_index]->prepare) {
+      TfLiteStatus status = registrations[nodeData[i].used_op_index]->prepare(&ctx, &tflNodes[i]);
       if (status != kTfLiteOk) {
         return status;
       }
@@ -489,7 +489,7 @@ TfLiteStatus )"
       << prefix_ << R"(invoke() {
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
-    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
+    TfLiteStatus status = registrations[nodeData[i].used_op_index]->invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
       return status;
     }

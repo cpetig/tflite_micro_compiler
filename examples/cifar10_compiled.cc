@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 02.07.2020 08:03:15
+// Generated on: 30.06.2020 20:07:01
 
 #include <cassert>
 
@@ -32,7 +32,7 @@ struct NodeInfo_t { // subset of TfLiteNode used for initialization from constan
 
 TfLiteContext ctx{};
 TfLiteTensor tflTensors[20];
-TfLiteRegistration registrations[OP_LAST];
+TfLiteRegistration *registrations[OP_LAST];
 TfLiteNode tflNodes[8];
 
 const TfArray<4, int> tensor_dimension0 = { 4, { 1,32,32,3 } };
@@ -714,13 +714,13 @@ TfLiteStatus cifar_init() {
     tflNodes[i].builtin_data = nodeData[i].builtin_data;
     tflNodes[i].custom_initial_data = nullptr;
     tflNodes[i].custom_initial_data_size = 0;
-    if (registrations[nodeData[i].used_op_index].init) {
-      tflNodes[i].user_data = registrations[nodeData[i].used_op_index].init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
+    if (registrations[nodeData[i].used_op_index]->init) {
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
     }
   }
   for(size_t i = 0; i < 8; ++i) {
-    if (registrations[nodeData[i].used_op_index].prepare) {
-      TfLiteStatus status = registrations[nodeData[i].used_op_index].prepare(&ctx, &tflNodes[i]);
+    if (registrations[nodeData[i].used_op_index]->prepare) {
+      TfLiteStatus status = registrations[nodeData[i].used_op_index]->prepare(&ctx, &tflNodes[i]);
       if (status != kTfLiteOk) {
         return status;
       }
@@ -745,7 +745,7 @@ TfLiteTensor* cifar_output(int index) {
 
 TfLiteStatus cifar_invoke() {
   for(size_t i = 0; i < 8; ++i) {
-    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
+    TfLiteStatus status = registrations[nodeData[i].used_op_index]->invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
       return status;
     }
