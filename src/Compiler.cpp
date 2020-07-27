@@ -371,12 +371,13 @@ TfLiteNode tflNodes[)"
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
   wr << R"(
-static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
-                                                 size_t bytes) {
+static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ctx,
+                                                 size_t bytes, void** ptr) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
-  return AllocPtr;
+  *ptr = AllocPtr;
+  return kTfLiteOk;
 }
 } // namespace
 
