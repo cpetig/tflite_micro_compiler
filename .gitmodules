@@ -1,0 +1,3 @@
+[submodule "tflite_micro_compiler"]
+	path = tflite_micro_compiler
+	url = ../tflite_micro_compiler.git
