@@ -5,7 +5,7 @@
 
 #include "CustomOperators.h"
 #include "RecordAllocations.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 
 static std::vector<tflmc::Allocation> g_loggedAllocations;
@@ -36,7 +36,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   g_arenaPtr = arena_buf.data();
 
   tflite::MicroErrorReporter error_reporter;
-  tflite::AllOpsResolver resolver;
+  tflite::ops::micro::AllOpsResolver resolver;
   tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver);
   tflite::MicroInterpreter interpreter(model, resolver, arena_buf.data(),
                                        SUFFICIENT_ARENA_SIZE, &error_reporter);
@@ -45,8 +45,9 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   auto allocator = &interpreter.allocator_;
 
   tflite::NodeAndRegistration *nodeAndRegs;
-  allocator->StartModelAllocation(model, ctx, resolver, &nodeAndRegs);
-  allocator->FinishModelAllocation(model, ctx);
+  allocator->AllocateNodeAndRegistrations(resolver, &nodeAndRegs);
+  // allocator->StartModelAllocation(model, ctx, resolver, &nodeAndRegs);
+  // allocator->FinishModelAllocation(model, ctx);
 
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;

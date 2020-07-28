@@ -19,7 +19,7 @@ std::string tflmc::to_string(TfLiteType t) {
     NAME(kTfLiteComplex64);
     NAME(kTfLiteInt8);
     NAME(kTfLiteFloat16);
-    NAME(kTfLiteFloat64);
+    //NAME(kTfLiteFloat64);
     default:
       throw std::runtime_error(
           "Missing case in TfLiteType to string conversion");
@@ -44,8 +44,8 @@ std::string tflmc::c_type(TfLiteType t) {
     case kTfLiteInt8:
       return "int8_t";
     // case kTfLiteFloat16: return "float";
-    case kTfLiteFloat64:
-      return "double";
+    //case kTfLiteFloat64:
+      //return "double";
     default:
       throw std::runtime_error(
           "Missing case in TfLiteType to C type conversion");

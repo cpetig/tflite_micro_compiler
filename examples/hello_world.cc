@@ -1,7 +1,7 @@
 
 #include <iostream>  // for check output
 
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/simple_memory_allocator.h"
@@ -20,7 +20,7 @@ extern const unsigned char g_model[];
 // Set up logging.
 static tflite::ErrorReporter* error_reporter = nullptr;
 // This pulls in all the operation implementations we need.
-static tflite::AllOpsResolver* resolver = nullptr;
+static tflite::ops::micro::AllOpsResolver* resolver = nullptr;
 static const tflite::Model* model = nullptr;
 static tflite::MicroInterpreter* interpreter = nullptr;
 
@@ -38,7 +38,7 @@ void init(void) {
                          model->version(), TFLITE_SCHEMA_VERSION);
     return;
   }
-  static tflite::AllOpsResolver local_resolver;
+  static tflite::ops::micro::AllOpsResolver local_resolver;
   resolver = &local_resolver;
 
   // Build an interpreter to run the model with.

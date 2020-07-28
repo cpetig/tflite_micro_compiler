@@ -11,7 +11,7 @@ namespace {
 
 class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
  public:
-  void* Allocate(size_t size, size_t alignment_hint) override {
+  void* Allocate(size_t size) override {
     lastAllocSize = size;
     return malloc(size);
   }
@@ -85,7 +85,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteFullyConnectedParams const* p =
           (TfLiteFullyConnectedParams const*)data;
       out_ << to_string(p->activation) << ", " << to_string(p->weights_format)
-           << ", " << p->keep_num_dims << ", " << p->asymmetric_quantize_inputs
+           << ", " << p->keep_num_dims 
            << " };";
     } break;
     case tflite::BuiltinOperator_MAX_POOL_2D:
@@ -248,7 +248,7 @@ void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
     // DUMP_TENSOR2(kTfLiteComplex64);
     DUMP_TENSOR2(kTfLiteInt8, int8_t, int32_t);
     // DUMP_TENSOR2(kTfLiteFloat16);
-    DUMP_TENSOR2(kTfLiteFloat64, double, double);
+    //DUMP_TENSOR2(kTfLiteFloat64, double, double);
     default: {
       out_ << "const ALIGN(4) uint8_t " << name << "[" << t.bytes << "] = { ";
       for (size_t i = 0; i < t.bytes; i++)

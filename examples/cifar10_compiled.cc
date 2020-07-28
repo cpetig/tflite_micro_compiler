@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 27.07.2020 23:21:06
+// Generated on: 28.07.2020 08:53:20
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 145464;
+constexpr int kTensorArenaSize = 144000;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -649,10 +649,10 @@ const TfArray<1, int> outputs4 = { 1, { 16 } };
 const TfLiteReshapeParams opdata5 = { { 0, 0, 0, 0, 0, 0, 0, 0, }, 0 };
 const TfArray<2, int> inputs5 = { 2, { 16,6 } };
 const TfArray<1, int> outputs5 = { 1, { 17 } };
-const TfLiteFullyConnectedParams opdata6 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
+const TfLiteFullyConnectedParams opdata6 = { kTfLiteActRelu, kTfLiteFullyConnectedWeightsFormatDefault, false };
 const TfArray<3, int> inputs6 = { 3, { 17,7,4 } };
 const TfArray<1, int> outputs6 = { 1, { 18 } };
-const TfLiteFullyConnectedParams opdata7 = { kTfLiteActNone, kTfLiteFullyConnectedWeightsFormatDefault, false, false };
+const TfLiteFullyConnectedParams opdata7 = { kTfLiteActNone, kTfLiteFullyConnectedWeightsFormatDefault, false };
 const TfArray<3, int> inputs7 = { 3, { 18,8,5 } };
 const TfArray<1, int> outputs7 = { 1, { 19 } };
 const TensorInfo_t tensorData[] = {
@@ -672,10 +672,10 @@ const TensorInfo_t tensorData[] = {
   { kTfLiteFloat32, tensor_arena + 115200, (TfLiteIntArray*)&tensor_dimension13, 28800, },
   { kTfLiteFloat32, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension14, 43264, },
   { kTfLiteFloat32, tensor_arena + 43264, (TfLiteIntArray*)&tensor_dimension15, 9216, },
-  { kTfLiteFloat32, tensor_arena + 4096, (TfLiteIntArray*)&tensor_dimension16, 4096, },
-  { kTfLiteFloat32, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension17, 4096, },
-  { kTfLiteFloat32, tensor_arena + 4096, (TfLiteIntArray*)&tensor_dimension18, 256, },
-  { kTfLiteFloat32, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension19, 40, },
+  { kTfLiteFloat32, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension16, 4096, },
+  { kTfLiteFloat32, tensor_arena + 4096, (TfLiteIntArray*)&tensor_dimension17, 4096, },
+  { kTfLiteFloat32, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension18, 256, },
+  { kTfLiteFloat32, tensor_arena + 256, (TfLiteIntArray*)&tensor_dimension19, 40, },
 };const NodeInfo_t nodeData[] = {
   { (TfLiteIntArray*)&inputs0, (TfLiteIntArray*)&outputs0, const_cast<void*>(static_cast<const void*>(&opdata0)), OP_CONV_2D, },
   { (TfLiteIntArray*)&inputs1, (TfLiteIntArray*)&outputs1, const_cast<void*>(static_cast<const void*>(&opdata1)), OP_MAX_POOL_2D, },

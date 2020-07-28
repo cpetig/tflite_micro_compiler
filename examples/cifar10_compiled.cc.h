@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 30.06.2020 20:07:01
+// Generated on: 28.07.2020 08:53:20
 
 #ifndef cifar_GEN_H
 #define cifar_GEN_H

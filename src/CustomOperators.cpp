@@ -24,11 +24,11 @@ limitations under the License.
 #include <dlfcn.h>
 
 tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
+    tflite::ops::micro::AllOpsResolver *resolver) {
   const char *filename = "./libtflite_micro_custom.so";
   void *custom_lib = dlopen(filename, RTLD_NOW);
   if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver * res);
+    TfLiteStatus (*reg_fun)(tflite::ops::micro::AllOpsResolver * res);
     // see "man dlopen" for an explanation of this nasty construct
     *(void **)(&reg_fun) = dlsym(custom_lib, "register_custom");
     char *error = dlerror();
@@ -55,7 +55,7 @@ void tflmc::UnloadCustom(tflmc::custom_operator_handle custom_lib) {
 #else
 // anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
 tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
+    tflite::ops::micro::AllOpsResolver *resolver) {
   return nullptr;
 }
 

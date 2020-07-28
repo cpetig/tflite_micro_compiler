@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 27.07.2020 23:21:06
+// Generated on: 28.07.2020 08:53:20
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 236040;
+constexpr int kTensorArenaSize = 179200;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -3133,21 +3133,21 @@ const TensorInfo_t tensorData[] = {
   { kTfLiteUInt8, tensor_arena + 1008, (TfLiteIntArray*)&tensor_dimension4, 1001, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant4))}, },
   { kTfLiteInt32, (void*)tensor_data5, (TfLiteIntArray*)&tensor_dimension5, 8, {kTfLiteNoQuantization, nullptr}, },
   { kTfLiteInt32, (void*)tensor_data6, (TfLiteIntArray*)&tensor_dimension6, 32, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant6))}, },
-  { kTfLiteUInt8, tensor_arena + 153600, (TfLiteIntArray*)&tensor_dimension7, 51200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant7))}, },
+  { kTfLiteUInt8, tensor_arena + 76800, (TfLiteIntArray*)&tensor_dimension7, 51200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant7))}, },
   { kTfLiteUInt8, (void*)tensor_data8, (TfLiteIntArray*)&tensor_dimension8, 216, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant8))}, },
-  { kTfLiteUInt8, tensor_arena + 12800, (TfLiteIntArray*)&tensor_dimension9, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant9))}, },
+  { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension9, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant9))}, },
   { kTfLiteInt32, (void*)tensor_data10, (TfLiteIntArray*)&tensor_dimension10, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant10))}, },
   { kTfLiteUInt8, (void*)tensor_data11, (TfLiteIntArray*)&tensor_dimension11, 1152, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant11))}, },
   { kTfLiteInt32, (void*)tensor_data12, (TfLiteIntArray*)&tensor_dimension12, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant12))}, },
-  { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension13, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant13))}, },
+  { kTfLiteUInt8, tensor_arena + 12800, (TfLiteIntArray*)&tensor_dimension13, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant13))}, },
   { kTfLiteUInt8, (void*)tensor_data14, (TfLiteIntArray*)&tensor_dimension14, 16384, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant14))}, },
-  { kTfLiteUInt8, tensor_arena + 12800, (TfLiteIntArray*)&tensor_dimension15, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant15))}, },
+  { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension15, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant15))}, },
   { kTfLiteInt32, (void*)tensor_data16, (TfLiteIntArray*)&tensor_dimension16, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant16))}, },
   { kTfLiteUInt8, (void*)tensor_data17, (TfLiteIntArray*)&tensor_dimension17, 1152, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant17))}, },
   { kTfLiteInt32, (void*)tensor_data18, (TfLiteIntArray*)&tensor_dimension18, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant18))}, },
-  { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension19, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant19))}, },
+  { kTfLiteUInt8, tensor_arena + 12800, (TfLiteIntArray*)&tensor_dimension19, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant19))}, },
   { kTfLiteUInt8, (void*)tensor_data20, (TfLiteIntArray*)&tensor_dimension20, 16384, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant20))}, },
-  { kTfLiteUInt8, tensor_arena + 12800, (TfLiteIntArray*)&tensor_dimension21, 3200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant21))}, },
+  { kTfLiteUInt8, tensor_arena + 6400, (TfLiteIntArray*)&tensor_dimension21, 3200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant21))}, },
   { kTfLiteInt32, (void*)tensor_data22, (TfLiteIntArray*)&tensor_dimension22, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant22))}, },
   { kTfLiteUInt8, (void*)tensor_data23, (TfLiteIntArray*)&tensor_dimension23, 1152, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant23))}, },
   { kTfLiteInt32, (void*)tensor_data24, (TfLiteIntArray*)&tensor_dimension24, 1024, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant24))}, },
@@ -3159,7 +3159,7 @@ const TensorInfo_t tensorData[] = {
   { kTfLiteInt32, (void*)tensor_data30, (TfLiteIntArray*)&tensor_dimension30, 1024, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant30))}, },
   { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension31, 6400, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant31))}, },
   { kTfLiteUInt8, (void*)tensor_data32, (TfLiteIntArray*)&tensor_dimension32, 65536, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant32))}, },
-  { kTfLiteUInt8, tensor_arena + 102400, (TfLiteIntArray*)&tensor_dimension33, 51200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant33))}, },
+  { kTfLiteUInt8, tensor_arena + 128000, (TfLiteIntArray*)&tensor_dimension33, 51200, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant33))}, },
   { kTfLiteInt32, (void*)tensor_data34, (TfLiteIntArray*)&tensor_dimension34, 32, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant34))}, },
   { kTfLiteUInt8, (void*)tensor_data35, (TfLiteIntArray*)&tensor_dimension35, 72, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant35))}, },
   { kTfLiteInt32, (void*)tensor_data36, (TfLiteIntArray*)&tensor_dimension36, 64, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant36))}, },
@@ -3211,7 +3211,7 @@ const TensorInfo_t tensorData[] = {
   { kTfLiteInt32, (void*)tensor_data82, (TfLiteIntArray*)&tensor_dimension82, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant82))}, },
   { kTfLiteUInt8, (void*)tensor_data83, (TfLiteIntArray*)&tensor_dimension83, 1152, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant83))}, },
   { kTfLiteInt32, (void*)tensor_data84, (TfLiteIntArray*)&tensor_dimension84, 512, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant84))}, },
-  { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension85, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant85))}, },
+  { kTfLiteUInt8, tensor_arena + 25600, (TfLiteIntArray*)&tensor_dimension85, 12800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant85))}, },
   { kTfLiteUInt8, (void*)tensor_data86, (TfLiteIntArray*)&tensor_dimension86, 16384, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant86))}, },
   { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension87, 1001, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant87))}, },
   { kTfLiteUInt8, tensor_arena + 0, (TfLiteIntArray*)&tensor_dimension88, 76800, {kTfLiteAffineQuantization, const_cast<void*>(static_cast<const void*>(&quant88))}, },

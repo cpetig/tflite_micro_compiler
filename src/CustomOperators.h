@@ -16,12 +16,12 @@ limitations under the License.
 #ifndef TFLMCOMPILER_CUSTOMOPERATORS_H
 #define TFLMCOMPILER_CUSTOMOPERATORS_H
 
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
 
 namespace tflmc {
 typedef void* custom_operator_handle;
 
-custom_operator_handle LoadCustom(tflite::AllOpsResolver* res);
+custom_operator_handle LoadCustom(tflite::ops::micro::AllOpsResolver* res);
 void UnloadCustom(custom_operator_handle);
 }  // namespace tflmc
 
