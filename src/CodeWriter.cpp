@@ -109,6 +109,27 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteSoftmaxParams const* p = (TfLiteSoftmaxParams const*)data;
       out_ << p->beta << " };";
     } break;
+    case tflite::BuiltinOperator_ADD: {
+      out_ << "TfLiteAddParams " << name << " = { ";
+      TfLiteAddParams const* p = (TfLiteAddParams const*)data;
+      out_ << to_string(p->activation) << " };";
+    } break;
+    case tflite::BuiltinOperator_MUL: {
+      out_ << "TfLiteMulParams " << name << " = { ";
+      TfLiteMulParams const* p = (TfLiteMulParams const*)data;
+      out_ << to_string(p->activation) << " };";
+    } break;
+    case tflite::BuiltinOperator_SUB: {
+      out_ << "TfLiteSubParams " << name << " = { ";
+      TfLiteSubParams const* p = (TfLiteSubParams const*)data;
+      out_ << to_string(p->activation) << " };";
+    } break;
+    case tflite::BuiltinOperator_CONCATENATION: {
+      out_ << "TfLiteConcatenationParams " << name << " = { ";
+      TfLiteConcatenationParams const* p =
+          (TfLiteConcatenationParams const*)data;
+      out_ << p->axis << ", " << to_string(p->activation) << " };";
+    } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);
       uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
@@ -116,7 +137,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
            << "] = { ";
       for (uint32_t i = 0; i < datalen; ++i)
         out_ << int(((uint8_t const*)data)[i]) << ", ";
-      out_ << " }; /* op type " << int(op) << " */";
+      out_ << " }; /* op type " << int(op) << "="
+           << tflite::EnumNameBuiltinOperator(op) << " */";
     } break;
   }
   out_ << '\n';

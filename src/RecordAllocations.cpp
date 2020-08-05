@@ -13,14 +13,14 @@ static tflite::MicroAllocator *g_allocator;
 static int g_currentNodeIndex = -1;
 static uint8_t *g_arenaPtr = nullptr;
 
-static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
-                                                    size_t bytes, void **ptr) {
-  auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
-  assert(retVal == kTfLiteOk && "Alloc failure");
+static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                                    size_t bytes) {
+  void* ptr = g_allocator->AllocatePersistentBuffer(bytes);
+  assert(ptr!=nullptr && "Alloc failure");
   g_loggedAllocations.push_back(
-      {-(g_arenaPtr - (uint8_t *)*ptr + SUFFICIENT_ARENA_SIZE), bytes,
+      {-(g_arenaPtr - (uint8_t *)ptr + SUFFICIENT_ARENA_SIZE), bytes,
        g_currentNodeIndex});
-  return retVal;
+  return ptr;
 }
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
@@ -45,8 +45,9 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   auto allocator = &interpreter.allocator_;
 
   tflite::NodeAndRegistration *nodeAndRegs;
-  allocator->StartModelAllocation(model, ctx, resolver, &nodeAndRegs);
-  allocator->FinishModelAllocation(model, ctx);
+  TfLiteEvalTensor *eval_tensors=nullptr;
+  allocator->StartModelAllocation(model, resolver, &nodeAndRegs, &eval_tensors);
+  allocator->FinishModelAllocation(model, eval_tensors);
 
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
