@@ -77,3 +77,13 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   tflmc::UnloadCustom(custom);
   return g_loggedAllocations;
 }
+
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i) {
+  auto ctx = &interpreter->context_;
+  return ctx->GetEvalTensor(ctx, i);
+}
+
+TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
+  auto ctx = &interpreter->context_;
+  return ctx->GetTensor(ctx, i);
+}

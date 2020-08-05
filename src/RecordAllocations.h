@@ -13,6 +13,9 @@ struct Allocation {
 
 std::vector<Allocation> RecordAllocations(const tflite::Model *model);
 
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i);
+TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i);
+
 }  // namespace tflmc
 
 #endif
