@@ -1,6 +1,7 @@
 
 #include "Compiler.h"
 
+#include <memory>
 #include <fstream>
 #include <regex>
 #include <vector>
@@ -10,6 +11,11 @@
 #include "RecordAllocations.h"
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
+
+#ifndef SUFFICIENT_ARENA_SIZE 
+#define SUFFICIENT_ARENA_SIZE (128*1024*1024)
+#endif
+
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -74,8 +80,6 @@ bool tflmc::Compiler::init(const void *modelData) {
     return false;
   }
   subgraph_ = (*subgraphs)[0];
-  auto tensors = subgraph_->tensors();
-  auto operators = subgraph_->operators();
   if (subgraph_->inputs()->size() == 0 || subgraph_->outputs()->size() == 0) {
     std::cerr << "No inputs or no outputs found in model\n";
     return false;
@@ -90,9 +94,10 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
-  interpreter_ = std::make_unique<tflite::MicroInterpreter>(
-      model_, resolver_, arena_buf_.data(), arena_buf_.size(),
-      &microErrReporter_);
+  interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
+      new tflite::MicroInterpreter(
+        model_, resolver_, arena_buf_.data(), arena_buf_.size(),
+        &microErrReporter_));
 
   // Allocate memory from the tensor_arena for the model's tensors.
   TfLiteStatus allocate_status = interpreter_->AllocateTensors();
@@ -142,7 +147,9 @@ bool tflmc::Compiler::init(const void *modelData) {
 
     printf("operation %lu: %s\n", i, tflite::EnumNamesBuiltinOperator()[code]);
 
-    RegistrationInfo regInfo{reg, code};
+    RegistrationInfo regInfo;
+    regInfo.reg = reg;
+    regInfo.code = code;
     if (code == tflite::BuiltinOperator_CUSTOM) {
       regInfo.custom_name = reg->custom_name;
       has_custom_ops = true;
@@ -154,10 +161,10 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
 
     // There doesn't seem to be a way to get the node pointer, so copy it.
-    nodes_.push_back({*node, itOp - registrations_.begin()});
+    nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = tflmc::RecordAllocations(model_);
+  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
   for (const auto &alloc : runtimeAllocations) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
@@ -297,8 +304,8 @@ TfLiteNode tflNodes[)"
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
       wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
          << node.custom_initial_data_size << "] = { ";
-      for (uint32_t i = 0; i < node.custom_initial_data_size; ++i)
-        wr << int(((uint8_t const *)node.custom_initial_data)[i]) << ", ";
+      for (int j = 0; j < node.custom_initial_data_size; ++j)
+        wr << int(((uint8_t const *)node.custom_initial_data)[j]) << ", ";
       wr << " }; /* custom_initial_data */\n";
     } else {
       wr.writeBuiltin(regInfo.code, node.builtin_data,
@@ -569,7 +576,7 @@ std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
   ss << (tensor->allocation_type == kTfLiteMmapRo ? "ROM" : "RAM") << "Tensor_";
 
   auto nOps = interpreter_->operators_size();
-  for (int i = 0; i < nOps; i++) {
+  for (size_t i = 0; i < nOps; i++) {
     auto nodeAndReg = interpreter_->node_and_registration(i);
     auto node = &nodeAndReg.node;
 

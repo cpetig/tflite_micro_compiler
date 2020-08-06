@@ -180,18 +180,18 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
   out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "["
        << t.dims->data[0];
-  for (uint32_t i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
+  for (int i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
   out_ << "] = { ";
   if (t.dims->size == 1)  // one dimension: Single line of data
   {
-    for (uint32_t i = 0; i < t.dims->data[0]; ++i)
+    for (int i = 0; i < t.dims->data[0]; ++i)
       out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
     out_ << "};\n";
   } else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
   {
-    for (uint32_t i = 0; i < t.dims->data[0]; ++i) {
+    for (int i = 0; i < t.dims->data[0]; ++i) {
       out_ << "\n  ";
-      for (uint32_t j = 0; j < t.dims->data[1]; ++j)
+      for (int j = 0; j < t.dims->data[1]; ++j)
         out_ << (printT)(tflite::GetTensorData<T>(&t)[i * t.dims->data[1] + j])
              << ", ";
     }
@@ -199,12 +199,12 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   } else  // More dimensions: Inner two dimensions per line (space between two
           // middle elements)
   {
-    uint32_t outer_dim = t.dims->data[0];
-    uint32_t middle_dim = t.dims->data[t.dims->size - 2];
-    uint32_t inner_dim = t.dims->data[t.dims->size - 1];
-    for (uint32_t i = 1; i < t.dims->size - 2; ++i)
+    int outer_dim = t.dims->data[0];
+    int middle_dim = t.dims->data[t.dims->size - 2];
+    int inner_dim = t.dims->data[t.dims->size - 1];
+    for (int i = 1; i < t.dims->size - 2; ++i)
       outer_dim *= t.dims->data[i];
-    for (uint32_t i = 0; i < outer_dim; ++i) {
+    for (int i = 0; i < outer_dim; ++i) {
       // out_ << "\n  ";
       // uint32_t outer_index = inner_dim * middle_dim;
       // output a meaningful index for this line
@@ -218,8 +218,8 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
         // 	outer_index *= t.dims->data[j];
       }
       out_ << "\n  /* " << indexstr << " */ ";
-      for (uint32_t j = 0; j < middle_dim; ++j) {
-        for (uint32_t k = 0; k < inner_dim; ++k)
+      for (int j = 0; j < middle_dim; ++j) {
+        for (int k = 0; k < inner_dim; ++k)
           out_ << (printT)(tflite::GetTensorData<T>(
                       &t)[(i * middle_dim + j) * inner_dim + k])
                << ",";

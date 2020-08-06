@@ -37,7 +37,7 @@ void run() {
       best=i;
     }
   }
-  printf("Best match is %d with %.1f%%\n", best, bestval * (100/256.0f));
+  printf("Best match is %u with %d%%\n", best, bestval * 100/256);
 }
 
 int main(int argc, char** argv) {

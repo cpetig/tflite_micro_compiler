@@ -63,7 +63,7 @@ void run() {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
   }
   TfLiteTensor* model_output = interpreter->output(0);
-  for (uint32_t i = 0; i < model_output->dims->data[1]; ++i)
+  for (int i = 0; i < model_output->dims->data[1]; ++i)
     std::cerr << model_output->data.f[i] << ", ";
   std::cerr << std::endl;
 }

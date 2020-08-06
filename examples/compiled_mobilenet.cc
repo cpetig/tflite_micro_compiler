@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 27.07.2020 22:27:22
+// Generated on: 06.08.2020 14:58:04
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 31768;
+constexpr int kTensorArenaSize = 31424;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -169,12 +169,13 @@ const TensorInfo_t tensorData[] = {
   { (TfLiteIntArray*)&inputs29, (TfLiteIntArray*)&outputs29, const_cast<void*>(static_cast<const void*>(&opdata29)), OP_RESHAPE, },
   { (TfLiteIntArray*)&inputs30, (TfLiteIntArray*)&outputs30, const_cast<void*>(static_cast<const void*>(&opdata30)), OP_SOFTMAX, },
 };
-static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
-                                                 size_t bytes) {
+static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignored,
+                                                 size_t bytes, void **ptr) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
-  return AllocPtr;
+  *ptr =  AllocPtr;
+  return kTfLiteOk;
 }
 } // namespace
 

@@ -13,14 +13,16 @@ static tflite::MicroAllocator *g_allocator;
 static int g_currentNodeIndex = -1;
 static uint8_t *g_arenaPtr = nullptr;
 
-static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
-                                                    size_t bytes) {
-  void* ptr = g_allocator->AllocatePersistentBuffer(bytes);
-  assert(ptr!=nullptr && "Alloc failure");
+static ptrdiff_t g_arena_size = 0;
+
+static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                                    size_t bytes, void **ptr) {
+  auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
+  assert(retVal == kTfLiteOk && "Alloc failure");
   g_loggedAllocations.push_back(
-      {-(g_arenaPtr - (uint8_t *)ptr + SUFFICIENT_ARENA_SIZE), bytes,
+      {-(g_arenaPtr - (uint8_t *)*ptr + g_arena_size), bytes,
        g_currentNodeIndex});
-  return ptr;
+  return retVal;
 }
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
@@ -31,15 +33,16 @@ static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
 }
 
 std::vector<tflmc::Allocation> tflmc::RecordAllocations(
-    const tflite::Model *model) {
-  std::vector<uint8_t> arena_buf(SUFFICIENT_ARENA_SIZE);
+    const tflite::Model *model, ptrdiff_t arena_size) {
+  g_arena_size = arena_size;
+  std::vector<uint8_t> arena_buf(g_arena_size);
   g_arenaPtr = arena_buf.data();
 
   tflite::MicroErrorReporter error_reporter;
   tflite::AllOpsResolver resolver;
   tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver);
   tflite::MicroInterpreter interpreter(model, resolver, arena_buf.data(),
-                                       SUFFICIENT_ARENA_SIZE, &error_reporter);
+                                       g_arena_size, &error_reporter);
 
   auto ctx = &interpreter.context_;
   auto allocator = &interpreter.allocator_;
