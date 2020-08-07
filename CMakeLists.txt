@@ -46,13 +46,13 @@ SET(COMPILER_HEADERS
     )
 
 SET(COMPILER_SRCS
-    ${PROJECT_SOURCE_DIR}/src/CodeWriter.cpp
-    ${PROJECT_SOURCE_DIR}/src/Compiler.cpp
-    ${PROJECT_SOURCE_DIR}/src/CustomOperators.cpp
-    ${PROJECT_SOURCE_DIR}/src/MemMap.cpp
-    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cpp
-    ${PROJECT_SOURCE_DIR}/src/TypeToString.cpp
-    ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/CodeWriter.cc
+    ${PROJECT_SOURCE_DIR}/src/Compiler.cc
+    ${PROJECT_SOURCE_DIR}/src/CustomOperators.cc
+    ${PROJECT_SOURCE_DIR}/src/MemMap.cc
+    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cc
+    ${PROJECT_SOURCE_DIR}/src/TypeToString.cc
+    ${PROJECT_SOURCE_DIR}/src/main.cc
     )
 
 ADD_LIBRARY(${PROJECT_NAME} STATIC
@@ -77,7 +77,7 @@ TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC
     SUFFICIENT_ARENA_SIZE=128*1024*1024
 )
 TARGET_COMPILE_FEATURES(${PROJECT_NAME} PUBLIC cxx_std_14)
-ADD_EXECUTABLE(compiler src/main.cpp)
+ADD_EXECUTABLE(compiler src/main.cc)
 TARGET_LINK_LIBRARIES(compiler ${PROJECT_NAME} ${CMAKE_DL_LIBS})
 
 ADD_CUSTOM_TARGET(
