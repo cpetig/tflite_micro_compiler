@@ -24,6 +24,11 @@ class CodeWriter {
 
   void writeQuantization(const TfLiteQuantization &q, const std::string &name);
 
+  // @IFX_PATCH@
+  void writeQuantizationDetails(const TfLiteQuantization& q,
+                                const std::string& name);
+
+
   template <typename T>
   CodeWriter &operator<<(T &&value) {
     out_ << std::forward<T>(value);

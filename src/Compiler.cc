@@ -80,6 +80,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     return false;
   }
   subgraph_ = (*subgraphs)[0];
+  auto tensors = subgraph_->tensors();
   if (subgraph_->inputs()->size() == 0 || subgraph_->outputs()->size() == 0) {
     std::cerr << "No inputs or no outputs found in model\n";
     return false;
@@ -301,6 +302,8 @@ TfLiteNode tflNodes[)"
     }
     wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
     wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
+    // @IFX_PATCH@
+    wr.writeQuantizationDetails(t->quantization, "quant_details" + std::to_string(i));
   }
   for (size_t i = 0; i < nodes_.size(); i++) {
     auto &node = nodes_[i].node;
@@ -339,10 +342,19 @@ TfLiteNode tflNodes[)"
       if (t->quantization.type == kTfLiteAffineQuantization) {
         wr << "{kTfLiteAffineQuantization, "
               "const_cast<void*>(static_cast<const void*>(&quant"
-           << i << "))}, ";
+           << i << ")) ";
       } else {
-        wr << "{kTfLiteNoQuantization, nullptr}, ";
+        wr << "{kTfLiteNoQuantization, nullptr ";
       }
+      // @IFX_PATCH@
+      if (t->quantization.details.type == kTfLiteSub8BitPackedUniformDetail) {
+        wr << ", {kTfLiteSub8BitPackedUniformDetail, "
+              "{&quant_packing_details" << i << "}}";
+      } else {
+          wr << ", {kTfLiteNoDetails, {}}";
+      }
+      wr << "},";
+
     }
     if (common_tensor_is_variable.None) {
       wr << std::to_string(t->is_variable)
@@ -350,7 +362,7 @@ TfLiteNode tflNodes[)"
     }
     wr << "},\n";
   }
-  wr << "};";
+  wr << "};\n";
   wr << R"(const NodeInfo_t nodeData[] = {
 )";
   for (size_t i = 0; i < nodes_.size(); i++) {
@@ -381,13 +393,15 @@ TfLiteNode tflNodes[)"
   wr << "};";
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
+  // @IFX_PATCH@
   wr << R"(
-static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
-                                                 size_t bytes) {
+static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignore,
+                                                 size_t bytes, void **ptr) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
-  return AllocPtr;
+  *ptr = AllocPtr;
+  return kTfLiteOk;
 }
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,

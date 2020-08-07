@@ -278,3 +278,18 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
          << " };\n";
   }
 }
+
+// @IFX_PATCH@
+void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
+                                          const std::string& name) {
+    if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
+      out_ << "const TfLiteCustomSub8BitPackingDetails" << name
+          << " = { ";
+      auto sub8_details = q.details.data.custom_sub8bit_packing;
+      out_ << sub8_details->bits_per_item << ", ";
+      out_ << sub8_details->container_bits << ", ";
+      out_ << sub8_details->packed_minor_dims << ", ";
+      out_ << "{}";
+      out_ << "};\n";
+    }
+} 
