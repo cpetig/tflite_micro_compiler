@@ -1,38 +1,32 @@
 TF_DIR=../../tensorflow
-CXXFLAGS=-g -std=c++11 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON \
-	-I${TF_DIR} -I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/gemmlowp \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ruy \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/kissfft
-LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
-	-ltensorflow-microlite
+include ../common.mk
 
-all: hello_world mobilenet hello_world_compiled cifar10 compiled_cifar10
+
+all: hello_world mobilenet hello_world_compiled cifar10 cifar10_compiled
 
 clean:
-	$(RM) *.o hello_world mobilnet mobilnet_compiled hello_world_compiled cifar10 compiled_cifar10
+	$(RM) *.o hello_world hello_world_compiled  mobilnet mobilnet_compiled cifar10 cifar10_compiled
 
 mobilenet: mobilenet.o mobilenet_v1_0_25_160_quantized.o gnu.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
 mobilenet_compiled: mobilenet2.o compiled_mobilenet.o gnu.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
 hello_world: hello_world.o hello_world_model.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
 hello_world_compiled: hello_world2.o compiled_hello_world.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
 
 hello_world_model.o: hello_world_model.cc
 	$(CXX) -o $@ -c $^ $(CXXFLAGS)
 
 cifar10: cifar10_model.o truck.o cifar10.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
 
 cifar10_compiled: truck.o compiled_cifar10.o cifar10_run_comp.o
-	$(CXX) -o $@ $^ ${LIBS}
+	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
 regenerate: ../compiler
 	../compiler hello_world.tflite compiled_hello_world.cpp hello_ 
