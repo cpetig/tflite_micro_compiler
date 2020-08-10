@@ -177,17 +177,42 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
          << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
     return;
   }
+
   uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
-  out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "["
-       << t.dims->data[0];
+
+  // For packed  formats the numer of serialized data items may not
+  // necessarily match the nominal dimensions of the tensor.
+  // We need to ensure this case is handled correctly...
+  size_t nominal_elts = 1;
+  for( int i = 0; i < t.dims->size; ++i) {
+    nominal_elts *= t.dims->data[i];
+  }
+
+  size_t serialized_elts = t.bytes/sizeof(T);
+
+  out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "[";
+
+  if (serialized_elts != nominal_elts) {
+    out_ << serialized_elts << "] /* PACKED ";
+
+  }
+
+  out_ << t.dims->data[0];
   for (int i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
+  if (serialized_elts != nominal_elts) {
+    out_ << " */";
+  }
   out_ << "] = { ";
-  if (t.dims->size == 1)  // one dimension: Single line of data
+  if (t.dims->size == 1 || serialized_elts != nominal_elts)  // one dimension/packed: 10 per line of data
   {
-    for (int i = 0; i < t.dims->data[0]; ++i)
-      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
-    out_ << "};\n";
-  } else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
+    for (int i = 0; i < serialized_elts; ++i) {
+        if (i%10 == 0)
+          out_ << "\n    ";
+      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", "; 
+    }
+    out_ << "\n};\n";
+  } 
+  else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
   {
     for (int i = 0; i < t.dims->data[0]; ++i) {
       out_ << "\n  ";
@@ -196,8 +221,9 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
              << ", ";
     }
     out_ << "\n};\n";
-  } else  // More dimensions: Inner two dimensions per line (space between two
-          // middle elements)
+  } 
+  else  // More dimensions: Inner two dimensions per line (space between two
+        // middle elements)
   {
     int outer_dim = t.dims->data[0];
     int middle_dim = t.dims->data[t.dims->size - 2];
@@ -283,12 +309,12 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
 void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
                                           const std::string& name) {
     if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
-      out_ << "const TfLiteCustomSub8BitPackingDetails" << name
+      out_ << "const TfLiteCustomSub8BitPackingDetails " << name
           << " = { ";
       auto sub8_details = q.details.data.custom_sub8bit_packing;
-      out_ << sub8_details->bits_per_item << ", ";
-      out_ << sub8_details->container_bits << ", ";
-      out_ << sub8_details->packed_minor_dims << ", ";
+      out_ << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
+      out_ << static_cast<unsigned>(sub8_details->container_bits) << ", ";
+      out_ << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
       out_ << "{}";
       out_ << "};\n";
     }
