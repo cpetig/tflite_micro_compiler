@@ -14,11 +14,13 @@ static int g_currentNodeIndex = -1;
 static uint8_t *g_arenaPtr = nullptr;
 
 static ptrdiff_t g_arena_size = 0;
+
+static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
                                                     size_t bytes) {
   void* ptr = g_allocator->AllocatePersistentBuffer(bytes);
   assert(ptr!=nullptr && "Alloc failure");
   g_loggedAllocations.push_back(
-      {-(g_arenaPtr - (uint8_t *)*ptr + g_arena_size), bytes,
+      {-(g_arenaPtr - (uint8_t *)ptr + g_arena_size), bytes,
        g_currentNodeIndex});
   return ptr;
 }
