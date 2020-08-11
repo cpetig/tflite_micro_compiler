@@ -193,7 +193,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "[";
 
   if (serialized_elts != nominal_elts) {
-    out_ << serialized_elts << "] /* PACKED ";
+    out_ << serialized_elts << " /* PACKED ";
 
   }
 
