@@ -24,10 +24,11 @@ class CodeWriter {
 
   void writeQuantization(const TfLiteQuantization &q, const std::string &name);
 
-  // @IFX_PATCH@
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
   void writeQuantizationDetails(const TfLiteQuantization& q,
                                 const std::string& name);
 
+#endif
 
   template <typename T>
   CodeWriter &operator<<(T &&value) {
