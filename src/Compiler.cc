@@ -27,13 +27,22 @@ bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &prefix) {
   // Load model flatbuffer.
   std::ifstream model_file(modelFileName, std::ios::binary | std::ios::ate);
+  if( ! model_file ) {
+      std::cerr << "Couod nto open " << modelFileName  << " for read\n";
+    return false;
+  }
   auto sz = model_file.tellg();
-  model_file.seekg(0, std::ios::beg);
+  if (sz == std::ifstream::pos_type(-1)) {
+    std::cerr << "Failed to read model file size\n";
+    return false;
+  }
   std::vector<char> model_data(sz);
+  model_file.seekg(0, std::ios::beg);
   if (!model_file.read(model_data.data(), sz)) {
     std::cerr << "Failed to read model file\n";
     return false;
   }
+
 
   std::ofstream outFile(outFileName);
   if (!outFile) {
@@ -356,7 +365,7 @@ TfLiteNode tflNodes[)"
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
       if (t->quantization.details.type == kTfLiteSub8BitPackedUniformDetail) {
         wr << ", {kTfLiteSub8BitPackedUniformDetail, "
-              "{&quant_packing_details" << i << "}}";
+              "{&quant_details" << i << "}}";
       } else {
           wr << ", {kTfLiteNoDetails, {}}";
       }
