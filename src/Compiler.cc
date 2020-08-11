@@ -401,15 +401,13 @@ TfLiteNode tflNodes[)"
   wr << "};";
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
-  // @IFX_PATCH@
   wr << R"(
-static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignore,
-                                                 size_t bytes, void **ptr) {
+static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
+                                                 size_t bytes) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
-  *ptr = AllocPtr;
-  return kTfLiteOk;
+  return AllocPtr;
 }
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
