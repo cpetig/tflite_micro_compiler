@@ -6,7 +6,7 @@ include common.mk
 all: compiler examples
 
 tflite:
-	$(MAKE) -j 4  -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/Makefile microlite
+	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/Makefile microlite
 
 COMPILER_OBJS = src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
 
