@@ -44,6 +44,46 @@
             ]
         },
         {
+            "name": "(gdb) hello_world_5_compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/hello_world_5_compiled.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) compile hello_world_5_compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/compiler.exe",
+            "args": ["examples/hello_world_5.tflite", "examples/compiled_hello_world_5.cpp",  "hello_",
+                ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
             "name": "(gdb) cifar interpreter example Launch",
             "type": "cppdbg",
             "request": "launch",

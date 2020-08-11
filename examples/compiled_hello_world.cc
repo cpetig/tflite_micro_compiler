@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 07.08.2020 12:35:57
+// Generated on: 11.08.2020 16:06:16
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -73,7 +73,10 @@ const TfArray<2, int> tensor_dimension2 = { 2, { 16,1 } };
 const TfArray<1, float> quant2_scale = { 1, { 0.0042242803610861301, } };
 const TfArray<1, int> quant2_zero = { 1, { 0 } };
 const TfLiteAffineQuantization quant2 = { (TfLiteFloatArray*)&quant2_scale, (TfLiteIntArray*)&quant2_zero, 0 };
-const ALIGN(8) int32_t tensor_data3[16] = { 1, 2897, -2489, 0, 3100, 0, 0, 1435, 0, 0, 8423, 0, 1938, -2828, -4011, 0, };
+const ALIGN(8) int32_t tensor_data3[16] = { 
+    1, 2897, -2489, 0, 3100, 0, 0, 1435, 0, 0, 
+    8423, 0, 1938, -2828, -4011, 0, 
+};
 const TfArray<1, int> tensor_dimension3 = { 1, { 16 } };
 const TfArray<1, float> quant3_scale = { 1, { 0.00010380736785009503, } };
 const TfArray<1, int> quant3_zero = { 1, { 0 } };
@@ -104,7 +107,10 @@ const TfArray<2, int> tensor_dimension5 = { 2, { 16,16 } };
 const TfArray<1, float> quant5_scale = { 1, { 0.012784697115421295, } };
 const TfArray<1, int> quant5_zero = { 1, { 0 } };
 const TfLiteAffineQuantization quant5 = { (TfLiteFloatArray*)&quant5_scale, (TfLiteIntArray*)&quant5_zero, 0 };
-const ALIGN(8) int32_t tensor_data6[16] = { 0, 1276, 2719, 1637, -1987, 0, 2795, -2001, 1256, 2593, -442, 1224, 0, -2141, -1752, 1434, };
+const ALIGN(8) int32_t tensor_data6[16] = { 
+    0, 1276, 2719, 1637, -1987, 0, 2795, -2001, 1256, 2593, 
+    -442, 1224, 0, -2141, -1752, 1434, 
+};
 const TfArray<1, int> tensor_dimension6 = { 1, { 16 } };
 const TfArray<1, float> quant6_scale = { 1, { 0.00015260609507095069, } };
 const TfArray<1, int> quant6_zero = { 1, { 0 } };
@@ -120,7 +126,9 @@ const TfArray<2, int> tensor_dimension8 = { 2, { 1,16 } };
 const TfArray<1, float> quant8_scale = { 1, { 0.0084969336166977882, } };
 const TfArray<1, int> quant8_zero = { 1, { 0 } };
 const TfLiteAffineQuantization quant8 = { (TfLiteFloatArray*)&quant8_scale, (TfLiteIntArray*)&quant8_zero, 0 };
-const ALIGN(4) int32_t tensor_data9[1] = { -4382, };
+const ALIGN(4) int32_t tensor_data9[1] = { 
+    -4382, 
+};
 const TfArray<1, int> tensor_dimension9 = { 1, { 1 } };
 const TfArray<1, float> quant9_scale = { 1, { 4.9393369408790022e-05, } };
 const TfArray<1, int> quant9_zero = { 1, { 0 } };
