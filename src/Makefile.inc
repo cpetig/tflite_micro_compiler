@@ -1,12 +1,11 @@
-$(info Adding tflite-micro compiler)
+
 TFLITE_U_COMPILER_SRCS := \
   src/CodeWriter.cc  src/CustomOperators.cc src/MemMap.cc src/TypeToString.cc \
-  src/Compiler.cc  src/main.cc src/RecordAllocations.cc
+  src/Compiler.cc  src/main.cc src/RecordAllocations.cc src/BuiltinAllocations.cc
 
 TFLITE_U_COMPILER_HDRS := \
-  src/CodeWriter.h src/Compiler.h src/CustomOperators.h src/MemMap.h src/RecordAllocations.h src/TypeToString.h
-
-
+  src/CodeWriter.h src/Compiler.h src/CustomOperators.h src/MemMap.h src/RecordAllocations.h \
+  src/TypeToString.h src/BuiltinAllocations.h src/ModelInfo.h
 
 
 # Builds a standalone binary.

@@ -8,18 +8,23 @@ IF(NOT TF_DIR)
     SET(TF_DIR "../tensorflow" CACHE STRING "TensorFlow source directory")
 ENDIF()
 
-GET_FILENAME_COMPONENT(tf_fullpath ${TF_DIR} REALPATH)
+GET_FILENAME_COMPONENT(TF_ABSPATH ${TF_DIR} REALPATH)
 
 IF(NOT GET_TF_SRC)
-    if(EXISTS "${tf_fullpath}")
-        SET(TFL_SRC ${TF_DIR}/tensorflow/lite)
+    if(EXISTS "${TF_ABSPATH}")
+        SET(TFL_SRC ${TF_ABSPATH}/tensorflow/lite)
         SET(TFLM_SRC ${TFL_SRC}/micro)
         SET(TFLMD_SRC ${TFLM_SRC}/tools/make/downloads)
         SET(TF_INCS
-        ${TF_DIR}
-        ${TFLMD_SRC}/flatbuffers/include
-        ${TFLMD_SRC}/ruy
+            ${TF_ABSPATH}
+            ${TFLMD_SRC}/flatbuffers/include
+            ${TFLMD_SRC}/ruy
         )
+        IF(WIN32)
+            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib/libtensorflow-microlite.a)
+        ELSE()
+            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/linux_x86_64/lib/libtensorflow-microlite.a)
+        ENDIF()
     ELSE()
         MESSAGE(FATAL_ERROR "\
 No valid TensorFlow source directory provided, default path \
@@ -32,9 +37,8 @@ ELSE()
     SET(TF_INCS
         ${TFLite_INCLUDE_DIRS}
         )
+    SET(TF_LIB tensorflow-microlite)
 ENDIF()
-
-SET(TF_LIB tensorflow-microlite)
 
 SET(COMPILER_HEADERS
     ${PROJECT_SOURCE_DIR}/src/CodeWriter.h
@@ -43,6 +47,8 @@ SET(COMPILER_HEADERS
     ${PROJECT_SOURCE_DIR}/src/MemMap.h
     ${PROJECT_SOURCE_DIR}/src/RecordAllocations.h
     ${PROJECT_SOURCE_DIR}/src/TypeToString.h
+    ${PROJECT_SOURCE_DIR}/src/BuiltinAllocations.h
+    ${PROJECT_SOURCE_DIR}/src/ModelInfo.h
     )
 
 SET(COMPILER_SRCS
@@ -52,6 +58,7 @@ SET(COMPILER_SRCS
     ${PROJECT_SOURCE_DIR}/src/MemMap.cc
     ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cc
     ${PROJECT_SOURCE_DIR}/src/TypeToString.cc
+    ${PROJECT_SOURCE_DIR}/src/BuiltinAllocations.cc
     ${PROJECT_SOURCE_DIR}/src/main.cc
     )
 
@@ -62,12 +69,6 @@ ADD_LIBRARY(${PROJECT_NAME} STATIC
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
     ${TF_INCS}
     )
-
-IF(WIN32)
-    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib)
-ELSE()
-    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/linux_x86_64/lib)
-ENDIF()
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${TF_LIB})
 

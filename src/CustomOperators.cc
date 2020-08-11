@@ -15,20 +15,19 @@ limitations under the License.
 
 #include "CustomOperators.h"
 
-#include <unistd.h>
-
-#include <iostream>
 
 // dynamic loading for custom operators
-#ifndef _WIN32
+#ifdef LINUX
+#include <unistd.h>
+#include <iostream>
 #include <dlfcn.h>
 
 tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
+    tflite::MicroOpResolver *resolver) {
   const char *filename = "./libtflite_micro_custom.so";
   void *custom_lib = dlopen(filename, RTLD_NOW);
   if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver * res);
+    TfLiteStatus (*reg_fun)(tflite::MicroOpResolver * res);
     // see "man dlopen" for an explanation of this nasty construct
     *(void **)(&reg_fun) = dlsym(custom_lib, "register_custom");
     char *error = dlerror();
@@ -53,9 +52,13 @@ void tflmc::UnloadCustom(tflmc::custom_operator_handle custom_lib) {
 }
 
 #else
-// anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
+// Obviously, no chance of loading shared lib on semi-hosted embedded builds
+// of pre-interpeter.   
+// TODO: could it work on  user-space hosted execution on qemu?  Attractive option...
+// as stuff like command-line args ought to work correctly.
+// TODO: anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
 tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
+    tflite::MicroOpResolver *resolver) {
   return nullptr;
 }
 

@@ -3,43 +3,20 @@
 #include <ctime>
 #include <iomanip>
 
-#include "TypeToString.h"
+#include "BuiltinAllocations.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
-
-namespace {
-
-class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
- public:
-  void* Allocate(size_t size, size_t alignment_hint) override {
-    lastAllocSize = size;
-    return malloc(size);
-  }
-  void Deallocate(void* data) override { free(data); }
-  size_t GetLastAllocSize() { return lastAllocSize; }
-
- private:
-  size_t lastAllocSize = 0;
-};
-size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
-                          const tflite::SubGraph* subgraph) {
-  // There seems to be no simple query function for this, so tickle the
-  // information out of the parse function.
-  auto dummyOp = subgraph->operators()->Get(0);
-  tflite::MicroErrorReporter errReporter;
-  AllocatorToGetLastAllocSize allocator;
-  void* outData = nullptr;
-  if (tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
-                          &outData) == kTfLiteOk)
-    free(outData);
-  return allocator.GetLastAllocSize();
-}
-
-}  // namespace
+#include "tensorflow/lite/core/api/error_reporter.h"
 
 tflmc::CodeWriter::CodeWriter(std::ostream& out,
-                              const tflite::SubGraph* subgraph)
-    : out_(out), subgraph_(subgraph) {
+                              const tflite::SubGraph* subgraph,
+                              tflite::ErrorReporter &err_reporter
+                              )
+    : out_(out), subgraph_(subgraph)
+    , err_reporter_(err_reporter)
+    , init_data_usage_(0)
+    , uninit_data_usage_(0)
+    , const_data_usage_(0)
+{
   // Setup stream: Print booleans as string:
   out_ << std::boolalpha;
   // Print floats with precision that is sufficient for exact back-conversion:
@@ -62,97 +39,58 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     return;
   }
   out_ << "const ";
-  switch (op) {
-    case tflite::BuiltinOperator_CONV_2D: {
-      out_ << "TfLiteConvParams " << name << " = { ";
-      TfLiteConvParams const* p = (TfLiteConvParams const*)data;
-      out_ << to_string(p->padding) << ", " << p->stride_width << ","
-           << p->stride_height << ", " << to_string(p->activation) << ", "
-           << p->dilation_width_factor << "," << p->dilation_height_factor
-           << " };";
-    } break;
-    case tflite::BuiltinOperator_DEPTHWISE_CONV_2D: {
-      out_ << "TfLiteDepthwiseConvParams " << name << " = { ";
-      TfLiteDepthwiseConvParams const* p =
-          (TfLiteDepthwiseConvParams const*)data;
-      out_ << to_string(p->padding) << ", " << p->stride_width << ","
-           << p->stride_height << ", " << p->depth_multiplier << ", "
-           << to_string(p->activation) << ", " << p->dilation_width_factor
-           << "," << p->dilation_height_factor << " };";
-    } break;
-    case tflite::BuiltinOperator_FULLY_CONNECTED: {
-      out_ << "TfLiteFullyConnectedParams " << name << " = { ";
-      TfLiteFullyConnectedParams const* p =
-          (TfLiteFullyConnectedParams const*)data;
-      out_ << to_string(p->activation) << ", " << to_string(p->weights_format)
-           << ", " << p->keep_num_dims << ", " << p->asymmetric_quantize_inputs
-           << " };";
-    } break;
-    case tflite::BuiltinOperator_MAX_POOL_2D:
-    case tflite::BuiltinOperator_AVERAGE_POOL_2D: {
-      out_ << "TfLitePoolParams " << name << " = { ";
-      TfLitePoolParams const* p = (TfLitePoolParams const*)data;
-      out_ << to_string(p->padding) << ", " << p->stride_width << ","
-           << p->stride_height << ", " << p->filter_width << ","
-           << p->filter_height << ", " << to_string(p->activation) << ", { "
-           << to_string(p->computed.padding) << " } };";
-    } break;
-    case tflite::BuiltinOperator_RESHAPE: {
-      out_ << "TfLiteReshapeParams " << name << " = { { ";
-      TfLiteReshapeParams const* p = (TfLiteReshapeParams const*)data;
-      for (uint32_t i = 0; i < TFLITE_RESHAPE_PARAMS_MAX_DIMENSION_COUNT; ++i)
-        out_ << p->shape[i] << ", ";
-      out_ << "}, " << p->num_dimensions << " };";
-    } break;
-    case tflite::BuiltinOperator_SOFTMAX: {
-      out_ << "TfLiteSoftmaxParams " << name << " = { ";
-      TfLiteSoftmaxParams const* p = (TfLiteSoftmaxParams const*)data;
-      out_ << p->beta << " };";
-    } break;
-    case tflite::BuiltinOperator_ADD: {
-      out_ << "TfLiteAddParams " << name << " = { ";
-      TfLiteAddParams const* p = (TfLiteAddParams const*)data;
-      out_ << to_string(p->activation) << " };";
-    } break;
-    case tflite::BuiltinOperator_MUL: {
-      out_ << "TfLiteMulParams " << name << " = { ";
-      TfLiteMulParams const* p = (TfLiteMulParams const*)data;
-      out_ << to_string(p->activation) << " };";
-    } break;
-    case tflite::BuiltinOperator_SUB: {
-      out_ << "TfLiteSubParams " << name << " = { ";
-      TfLiteSubParams const* p = (TfLiteSubParams const*)data;
-      out_ << to_string(p->activation) << " };";
-    } break;
-    case tflite::BuiltinOperator_CONCATENATION: {
-      out_ << "TfLiteConcatenationParams " << name << " = { ";
-      TfLiteConcatenationParams const* p =
-          (TfLiteConcatenationParams const*)data;
-      out_ << p->axis << ", " << to_string(p->activation) << " };";
-    } break;
-    default: {
-      size_t datalen = GetBuiltinDataSize(op, subgraph_);
-      uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
-      out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
-           << "] = { ";
-      for (uint32_t i = 0; i < datalen; ++i)
-        out_ << int(((uint8_t const*)data)[i]) << ", ";
-      out_ << " }; /* op type " << int(op) << "="
-           << tflite::EnumNameBuiltinOperator(op) << " */";
-    } break;
+  auto builtin_strings = BuiltinAllocations::getBuiltinStrings(op, data);
+  if (!builtin_strings.first.empty() && !builtin_strings.first.empty()) {
+    out_ << builtin_strings.first << " " << name << " = "
+         << builtin_strings.second << ";";
+  } else {
+    size_t datalen = BuiltinAllocations::GetBuiltinDataSize(op, subgraph_, err_reporter_);
+    uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
+    out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
+         << "] = { ";
+    for (uint32_t i = 0; i < datalen; ++i)
+      out_ << int(((uint8_t const*)data)[i]) << ", ";
+    out_ << " }; /* op type " << int(op) << "="
+         << tflite::EnumNameBuiltinOperator(op) << " */";
   }
   out_ << '\n';
+}
+
+
+                    
+void tflmc::CodeWriter::writeCustom(uint8_t const *opdata, size_t node_i, size_t opdata_size) {
+    out_ << "uint8_t ALIGN(4) opdata" + std::to_string(node_i) << "["
+        << opdata_size << "] = { ";
+    for (size_t j = 0; j < opdata_size; ++j)
+      out_ << int(opdata[j]) << ", ";
+    out_ << " }; /* custom_initial_data */\n";
+    const_data_usage_ += opdata_size;
+    init_data_usage_ += opdata_size;
+}
+
+template<class TFArray>
+size_t writeTfArray( std::ostream &os, const TFArray *tfarray, const std::string &name, const char * suffix, const char *data_type_id)
+{
+    os << "const TfArray<" 
+          << tfarray->size << ", " 
+          << data_type_id << "> " 
+       << name << suffix
+       << " = { " << tfarray->size << ", { ";
+    for (int i = 0; i < tfarray->size; i++) {
+      os << tfarray->data[i] << ", ";
+    }
+    os << "} };\n";
+    return tfarray->size+1;
 }
 
 void tflmc::CodeWriter::writeIntArray(const TfLiteIntArray& arr,
                                       const std::string& name) {
   if (arr.size == 0) {
     out_ << "const int " << name << " = 0; /* empty TfLiteIntArray */\n";
+    const_data_usage_ += sizeof(int);
   } else {
-    out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
-         << arr.size << ", { ";
-    writeIntArrayData(arr);
-    out_ << " } };\n";
+    auto arr_size = writeTfArray(out_, &arr, name, "", "int");
+    const_data_usage_ += sizeof(int)*arr_size;
   }
 }
 
@@ -168,14 +106,16 @@ void tflmc::CodeWriter::writeIntArrayData(const TfLiteIntArray& arr) {
 // outputting int8_t as a character is not what we intend here, we want to see
 // the value, so we introduce printT
 template <class T, class printT>
-static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
+static size_t dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
                                  const std::string& tname,
                                  const std::string& name) {
+
+  size_t mem_size; 
   if (t.dims->size == 0) {  // special case 0 dimensions, we output an array to
                             // avoid distinction from >0 dimension at every use
     out_ << "const " << tname << " " << name << "[1] = { "
          << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
-    return;
+    return sizeof(T);
   }
 
   uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
@@ -194,6 +134,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
 
   if (serialized_elts != nominal_elts) {
     out_ << serialized_elts << " /* PACKED ";
+
   }
 
   out_ << t.dims->data[0];
@@ -202,13 +143,15 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
     out_ << " */";
   }
   out_ << "] = { ";
-  if (t.dims->size == 1 || serialized_elts != nominal_elts) {
-    // one dimension/packed: 10 per line of data
-    for (int i = 0; i < serialized_elts; ++i) {
-      if (i % 10 == 0) out_ << "\n    ";
-      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
+  if (t.dims->size == 1 || serialized_elts != nominal_elts)  // one dimension/packed: 10 per line of data
+  {
+    for (size_t i = 0; i < serialized_elts; ++i) {
+        if (i%10 == 0)
+          out_ << "\n    ";
+      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", "; 
     }
     out_ << "\n};\n";
+    mem_size = serialized_elts*sizeof(T);
   } else if (t.dims->size == 2) {
     // two dimensions: Inner dimension is one line
     for (int i = 0; i < t.dims->data[0]; ++i) {
@@ -218,6 +161,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
              << ", ";
     }
     out_ << "\n};\n";
+    mem_size = nominal_elts*sizeof(T);
   } else {
     // More dimensions: Inner two dimensions per line (space between two
     // middle elements)
@@ -249,12 +193,14 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
       }
     }
     out_ << "\n};\n";
+    mem_size = nominal_elts*sizeof(T);
   }
+  return mem_size;
 }
 
 #define DUMP_TENSOR2(TfType, CType, PrintType)                     \
   case TfType:                                                     \
-    dump_tensor_contents<CType, PrintType>(out_, t, #CType, name); \
+    const_data_usage_ += dump_tensor_contents<CType, PrintType>(out_, t, #CType, name); \
     break
 
 void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
@@ -276,42 +222,72 @@ void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
       for (size_t i = 0; i < t.bytes; i++)
         out_ << int((uint8_t)t.data.raw_const[i]) << ",";
       out_ << " };\n";
+      const_data_usage_ += t.bytes;
     } break;
   }
 }
+
+
+static void writeAffineQuantizationFields(std::ostream &out, const std::string& name, TfLiteAffineQuantization const *aq) {
+
+  out << "{ "
+         << "(TfLiteFloatArray*)&" << name << "_scale, "
+         << "(TfLiteIntArray*)&" << name << "_zero, " << aq->quantized_dimension
+         << " }";
+}
+
+
+#if SUPPORT_CUSTOM_QUANT
+static void writeQuantizationDetails(
+    std::ostream& out, const TfLiteCustomSub8BitPackingDetails* sub8_details,
+    const std::string& name) {
+    out << "const TfLiteCustomSub8BitPackingDetails " << name << " = { ";
+    out << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
+    out << static_cast<unsigned>(sub8_details->container_bits) << ", ";
+    out << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
+    out << static_cast<unsigned>(sub8_details->sparsity_coding) << ", ";
+    out << "{}";
+    out << "};\n";
+}
+#endif  // SUPPORT_CUSTOM_QUANT
 
 void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
                                           const std::string& name) {
   if (q.type == kTfLiteAffineQuantization) {
     auto aq = (TfLiteAffineQuantization const*)q.params;
-    out_ << "const TfArray<" << aq->scale->size << ", float> " << name
-         << "_scale = { " << aq->scale->size << ", { ";
-    for (int i = 0; i < aq->scale->size; i++) {
-      out_ << aq->scale->data[i] << ", ";
-    }
-    out_ << "} };\n";
-    out_ << "const TfArray<" << aq->zero_point->size << ", int> " << name
-         << "_zero = { " << aq->zero_point->size << ", { ";
-    writeIntArrayData(*aq->zero_point);
-    out_ << " } };\n";
-    out_ << "const TfLiteAffineQuantization " << name << " = { "
-         << "(TfLiteFloatArray*)&" << name << "_scale, "
-         << "(TfLiteIntArray*)&" << name << "_zero, " << aq->quantized_dimension
-         << " };\n";
+    auto scale_size = writeTfArray(out_, aq->scale, name, "_scale", "float");
+    auto zp_size = writeTfArray(out_,  aq->zero_point, name, "_zero", "int");
+    const_data_usage_ += scale_size * sizeof(float)  + zp_size*sizeof(int);
+    out_ << "const TfLiteAffineQuantization " << name << " = ";
+    writeAffineQuantizationFields(out_, name, aq);
+    out_ << ";\n";
+    const_data_usage_ += sizeof(TfLiteAffineQuantization);
+#if SUPPORT_CUSTOM_QUANT
+  } else if (q.type == kTfLitePackedAffineQuantization) {
+    auto paq = (TfLitePackedAffineQuantization const*)q.params;
+    writeQuantizationDetails(out_, paq->custom_sub8bit_packing, name + "_packing");
+    const_data_usage_ += sizeof(TfLiteCustomSub8BitPackingDetails);
+    auto aq = &paq->affine;
+    auto scale_size = writeTfArray(out_, aq->scale, name, "_scale", "float");
+    auto zp_size = writeTfArray(out_,  aq->zero_point, name, "_zero", "int");
+    const_data_usage_ += scale_size * sizeof(float)  + zp_size*sizeof(int);
+    out_ << "const TfLitePackedAffineQuantization " << name << " = { ";
+    writeAffineQuantizationFields(out_, name, aq);
+    out_ << ", &" <<  name + "_packing" << "};\n";
+    const_data_usage_ += sizeof(kTfLitePackedAffineQuantization);
+#endif  // SUPPORT_CUSTOM_QUANT
   }
 }
 
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
-void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
-                                                 const std::string& name) {
-  if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
-    out_ << "const TfLiteCustomSub8BitPackingDetails " << name << " = { ";
-    auto sub8_details = q.details.data.custom_sub8bit_packing;
-    out_ << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
-    out_ << static_cast<unsigned>(sub8_details->container_bits) << ", ";
-    out_ << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
-    out_ << "{}";
-    out_ << "};\n";
-  }
+void tflmc::CodeWriter::writeTensorArena(size_t tensor_arena_size)
+{
+  out_ << R"(
+constexpr int kTensorArenaSize = )"
+     << tensor_arena_size << R"(;
+uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
+)";
+  uninit_data_usage_ += tensor_arena_size;
 }
-#endif
+
+
+  

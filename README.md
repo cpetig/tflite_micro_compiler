@@ -48,7 +48,7 @@ CMake using the option `TF_TAG`.
 e.g.
 
 ``` bash
-cmake -DGET_TF_SRC=ON TF_TAG=v2.2.0 ..
+cmake -DGET_TF_SRC=ON -DTF_TAG=v2.2.0 ..
 ```
 
 Similarly a Git commit hash can be provided using `TF_COMMIT`. Note that
@@ -57,7 +57,7 @@ Similarly a Git commit hash can be provided using `TF_COMMIT`. Note that
 e.g.
 
 ```bash
-cmake -DGET_TF_SRC=ON TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
+cmake -DGET_TF_SRC=ON -DTF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
 ```
 
 To checkout a different TensorFlow code base without clearing the CMake cache
@@ -67,7 +67,7 @@ source to be checked-out again.
 e.g.
 
 ```bash
-cmake -DGET_TF_SRC=ON -DTF_RECACHE=ON TF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
+cmake -DGET_TF_SRC=ON -DTF_RECACHE=ON -DTF_COMMIT=0fecf6f89fd7bacc1ec4213b946a254e885b82ac ..
 ```
 
 ## Providing TensorFlow Source Manually
@@ -79,7 +79,7 @@ providing the argument `TF_DIR`.
 e.g.
 
 ``` bash
-cmake -DTF_DIR=../../my_tf_source ..
+cmake -DTF_DIR=../my_tensorflow ..
 ```
 
 ## Additional Targets
@@ -117,7 +117,7 @@ make format
     ./compiler hello_world.tflite hello_compiled.cpp hello_
     ```
 
-- for a quick view into the generated code see [`compiled_hello.cpp`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cpp)
+- for a quick view into the generated code see [`compiled_hello_world.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello_world.cc)
 
   You can compare calling into interpreter and compiled code between [`hello_world.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world.cc)
   and [`hello_world2.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world2.cc)
