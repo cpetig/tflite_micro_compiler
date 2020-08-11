@@ -346,13 +346,19 @@ TfLiteNode tflNodes[)"
       } else {
         wr << "{kTfLiteNoQuantization, nullptr ";
       }
-      // @IFX_PATCH@
+
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
       if (t->quantization.details.type == kTfLiteSub8BitPackedUniformDetail) {
         wr << ", {kTfLiteSub8BitPackedUniformDetail, "
               "{&quant_packing_details" << i << "}}";
       } else {
           wr << ", {kTfLiteNoDetails, {}}";
       }
+#else
+#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
+#endif
+#endif
       wr << "},";
 
     }
