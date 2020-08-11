@@ -1,17 +1,17 @@
 TF_DIR=../tensorflow
 include common.mk
 
-.PHONY: tflite all
+.PHONY: tflite all 
 
-all: compiler examples
+all: compiler$(EXE_SUFFIX) examples
 
 tflite:
 	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/Makefile microlite
 
 COMPILER_OBJS = src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
 
-compiler: $(COMPILER_OBJS) tflite
-	$(CXX) $(LDOPTS) -o $@ $(COMPILER_OBJS) $(LIBS)
+compiler$(EXE_SUFFIX): $(COMPILER_OBJS) tflite
+	$(CXX) $(CXXFLAGS) $(LDOPTS) -o $@ $(COMPILER_OBJS) $(LIBS)
 
 clean: clean-compiler clean-examples
 	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/makefile clean
@@ -22,12 +22,19 @@ format:
 	clang-format -i $(FORMAT_FILES)
 
 .PHONY: examples clean-examples clean-compiler
-examples:
-	cd examples && $(MAKE)
+
+examples: tflite
+	$(MAKE) -C examples all
+
+run_examples: tflite
+	$(MAKE) -C examples run_all
+ 
+regenerate: compiler$(EXE_SUFFIX)
+	$(MAKE) -C examples regenerate
 
 clean-examples:
 	$(MAKE) -C examples clean
 
 clean-compiler:
-	$(RM) src/*.o compiler
+	$(RM) src/*.o compiler$(EXE_SUFFIX)
 	
