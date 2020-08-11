@@ -23,17 +23,7 @@
                 "panel": "shared"
             },
             // arg passing example: in this case is executed make QUIET=0
-            "args": [
-                "-j", "4",
-                // "TARGET_ARCH=i386",
-                "BUILD_TYPE=debug",
-                "compiler",
-                "mobilenet",
-                "mobilenet_compiled",
-                "cifar10",
-                "cifar10_compiled",
-                "hello_world"
-            ],
+            "args": ["QUIET=0"],
             // Use the standard less compilation problem matcher.
             "problemMatcher": {
                 "base": "$gcc",

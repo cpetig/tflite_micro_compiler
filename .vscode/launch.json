@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "(gdb) hello example Launch",
             "type": "cppdbg",
@@ -47,47 +46,7 @@
             "name": "(gdb) cifar interpreter example Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/cifar10",
-            "args": [],
-            "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        
-        {
-            "name": "(gdb) mobilenet interpreter example Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/mobilenet.exe",
-            "args": [],
-            "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-
-        {
-            "name": "(gdb) mobilenet compiled example Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/mobilenet_compiled.exe",
+            "program": "${workspaceFolder}/examples/cifar10",
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
