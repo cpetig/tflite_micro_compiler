@@ -14,6 +14,7 @@ compiler: $(COMPILER_OBJS) tflite
 	$(CXX) $(LDOPTS) -o $@ $(COMPILER_OBJS) $(LIBS)
 
 clean: clean-compiler clean-examples
+	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/makefile clean
 
 FORMAT_FILES := $(shell find src -regex '.*\(h\|cpp\)')
 
