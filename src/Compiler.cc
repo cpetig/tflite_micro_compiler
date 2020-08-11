@@ -16,6 +16,11 @@
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
 #endif
 
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION != 100
+#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
+#endif
+#endif
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -302,8 +307,9 @@ TfLiteNode tflNodes[)"
     }
     wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
     wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
-    // @IFX_PATCH@
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
     wr.writeQuantizationDetails(t->quantization, "quant_details" + std::to_string(i));
+#endif
   }
   for (size_t i = 0; i < nodes_.size(); i++) {
     auto &node = nodes_[i].node;
@@ -348,16 +354,12 @@ TfLiteNode tflNodes[)"
       }
 
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
       if (t->quantization.details.type == kTfLiteSub8BitPackedUniformDetail) {
         wr << ", {kTfLiteSub8BitPackedUniformDetail, "
               "{&quant_packing_details" << i << "}}";
       } else {
           wr << ", {kTfLiteNoDetails, {}}";
       }
-#else
-#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
-#endif
 #endif
       wr << "},";
 

@@ -305,7 +305,7 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
   }
 }
 
-// @IFX_PATCH@
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
 void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
                                           const std::string& name) {
     if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
@@ -319,3 +319,4 @@ void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
       out_ << "};\n";
     }
 } 
+#endif
