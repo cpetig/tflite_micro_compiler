@@ -46,6 +46,7 @@ cifar10_compiled$(EXE_SUFFIX): truck.o $(COMPILED_FILES_SELECTION)/compiled_cifa
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
 regenerate: ../compiler$(EXE_SUFFIX)
+	mkdir -p generated
 	../compiler hello_world.tflite generated/compiled_hello_world.cc hello_world_
 	../compiler hello_world_5.tflite generated/compiled_hello_world_5.cc hello_world_5_
 	../compiler mobilenet.tflite generated/compiled_mobilenet.cc mobilenet_
