@@ -49,4 +49,4 @@ regenerate: ../compiler$(EXE_SUFFIX)
 	../compiler hello_world.tflite generated/compiled_hello_world.cc hello_world_
 	../compiler hello_world_5.tflite generated/compiled_hello_world_5.cc hello_world_5_
 	../compiler mobilenet.tflite generated/compiled_mobilenet.cc mobilenet_
-	../compiler cifar10.tflite generated/compiled_cifar10.cc cifar_
+	../compiler cifar10.tflite generated/compiled_cifar10.cc cifar10_
