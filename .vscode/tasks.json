@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "make",
+            "label": "make (generic)",
             "type": "shell",
             "command": "make",
             // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
@@ -28,11 +28,41 @@
                 // "TARGET_ARCH=i386",
                 "BUILD_TYPE=debug",
                 "compiler",
-                "mobilenet",
-                "mobilenet_compiled",
-                "cifar10",
-                "cifar10_compiled",
-                "hello_world"
+                "examples"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+        {
+            "label": "make (IFX)",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",
+                "-j", "4",
+                "TARGET_ARCH=i386",
+                "BUILD_TYPE=debug",
+                "compiler",
+                "examples"
             ],
             // Use the standard less compilation problem matcher.
             "problemMatcher": {

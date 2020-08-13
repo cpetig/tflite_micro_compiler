@@ -104,5 +104,6 @@
         "stack": "cpp",
         "*.ipp": "cpp",
         "__std_stream": "cpp"
-    }
+    },
+    "python.pythonPath": "C:\\venvs\\tf_2_2_0\\Scripts\\python.exe"
 }
