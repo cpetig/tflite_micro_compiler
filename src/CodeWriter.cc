@@ -205,7 +205,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   out_ << "] = { ";
   if (t.dims->size == 1 || serialized_elts != nominal_elts)  // one dimension/packed: 10 per line of data
   {
-    for (int i = 0; i < serialized_elts; ++i) {
+    for (size_t i = 0; i < serialized_elts; ++i) {
         if (i%10 == 0)
           out_ << "\n    ";
       out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", "; 
