@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 11.08.2020 16:06:16
+// Generated on: 13.08.2020 10:07:47
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -184,7 +184,7 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
 }
 } // namespace
 
-TfLiteStatus hello_init() {
+TfLiteStatus hello_world_init() {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
   ctx.GetEvalTensor = &GetEvalTensor;
   ctx.tensors = tflTensors;
@@ -234,18 +234,18 @@ TfLiteStatus hello_init() {
 static const int inTensorIndices[] = {
   10, 
 };
-TfLiteTensor* hello_input(int index) {
+TfLiteTensor* hello_world_input(int index) {
   return &ctx.tensors[inTensorIndices[index]];
 }
 
 static const int outTensorIndices[] = {
   11, 
 };
-TfLiteTensor* hello_output(int index) {
+TfLiteTensor* hello_world_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
 
-TfLiteStatus hello_invoke() {
+TfLiteStatus hello_world_invoke() {
   for(size_t i = 0; i < 5; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {

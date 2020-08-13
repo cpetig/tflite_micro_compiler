@@ -20,18 +20,18 @@ limitations under the License.
 #include "tensorflow/lite/micro/testing/test_utils.h"
 
 void test_compiled(void) {
-	hello_init();
+	hello_world_5_init();
     
     using tflite::testing::F2Q;
     using tflite::testing::Q2F;
   
   
     // Provide an input value
-    auto in_q = F2Q(1.57f, hello_input(0));
-	tflite::GetTensorData<uint8_t>(hello_input(0))[0]= in_q;
-	hello_invoke();
-	auto out_q = tflite::GetTensorData<uint8_t>(hello_output(0))[0];
-    float out = Q2F((int32_t)out_q, hello_output(0));
+    auto in_q = F2Q(1.57f, hello_world_5_input(0));
+	tflite::GetTensorData<uint8_t>(hello_world_5_input(0))[0]= in_q;
+	hello_world_5_invoke();
+	auto out_q = tflite::GetTensorData<uint8_t>(hello_world_5_output(0))[0];
+    float out = Q2F((int32_t)out_q, hello_world_5_output(0));
 	std::cerr << "result " << out << std::endl;
 }
 

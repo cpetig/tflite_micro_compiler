@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 11.08.2020 16:06:17
+// Generated on: 13.08.2020 10:07:47
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 145464;
+constexpr int kTensorArenaSize = 145440;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -736,7 +736,7 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
 }
 } // namespace
 
-TfLiteStatus cifar_init() {
+TfLiteStatus cifar10_init() {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
   ctx.GetEvalTensor = &GetEvalTensor;
   ctx.tensors = tflTensors;
@@ -782,18 +782,18 @@ TfLiteStatus cifar_init() {
 static const int inTensorIndices[] = {
   0, 
 };
-TfLiteTensor* cifar_input(int index) {
+TfLiteTensor* cifar10_input(int index) {
   return &ctx.tensors[inTensorIndices[index]];
 }
 
 static const int outTensorIndices[] = {
   19, 
 };
-TfLiteTensor* cifar_output(int index) {
+TfLiteTensor* cifar10_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
 
-TfLiteStatus cifar_invoke() {
+TfLiteStatus cifar10_invoke() {
   for(size_t i = 0; i < 8; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {

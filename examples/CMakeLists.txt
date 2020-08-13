@@ -1,4 +1,6 @@
 MESSAGE(STATUS "Micro compiler examples included")
+
+# TODO add support for building compiled versions
 MACRO(ADD_EXAMPLE TARGET_NAME)
     ADD_EXECUTABLE(${TARGET_NAME} ${TARGET_NAME}.cc ${ARGV})
     TARGET_LINK_LIBRARIES(${TARGET_NAME} PUBLIC ${PROJECT_NAME})

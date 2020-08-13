@@ -5,12 +5,14 @@ include common.mk
 
 all: compiler$(EXE_SUFFIX) examples
 
+$(TF_MICROLITE_LIB): tflite
+
 tflite:
 	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/Makefile microlite
 
 COMPILER_OBJS = src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
 
-compiler$(EXE_SUFFIX): $(COMPILER_OBJS) tflite
+compiler$(EXE_SUFFIX): $(COMPILER_OBJS) $(TF_MICROLITE_LIB)
 	$(CXX) $(CXXFLAGS) $(LDOPTS) -o $@ $(COMPILER_OBJS) $(LIBS)
 
 clean: clean-compiler clean-examples

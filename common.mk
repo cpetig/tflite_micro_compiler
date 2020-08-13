@@ -3,20 +3,21 @@ CXXFLAGS=-g -std=c++14 -DTF_LITE_STATIC_MEMORY -DDEBUG -O1 -DTF_LITE_DISABLE_X86
 	-I$(TF_DIR)/tensorflow/lite/micro/tools/make/downloads/gemmlowp \
 	-I$(TF_DIR)/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
 	-I$(TF_DIR)/tensorflow/lite/micro/tools/make/downloads/ruy \
-	-I$(TF_DIR)/tensorflow/lite/micro/tools/make/downloads/kissfft
+	-I$(TF_DIR)/tensorflow/lite/micro/tools/make/downloads/kissfft 
 
-LDOPTS=-L $(TF_DIR)/tensorflow/lite/micro/tools/make/gen/$(HOST_OS_BUILD)/lib
-
-
-ifeq ($(OS),Windows_NT)
-  LIBS=-ltensorflow-microlite 
-  HOST_OS_BUILD := windows_x86_64
-  EXE_SUFFIX := .exe
-else
-  LIBS=-ltensorflow-microlite -ldl
-  HOST_OS_BUILD := linux_x86_64
-   EXE_SUFFIX :=
-endif
 ifeq ($(BUILD_TYPE),debug)
   HOST_OS_BUILD:=$(HOST_OS_BUILD)_debug
 endif
+TF_MICROLITE_LIBDIR=$(TF_DIR)/tensorflow/lite/micro/tools/make/gen/$(HOST_OS_BUILD)/lib
+TF_MICROLITE_LIB=$(TF_MICROLITE_LIBDIR)/libtensorflow-microlite.a
+
+ifeq ($(OS),Windows_NT)
+  LIBS=$(TF_MICROLITE_LIB)
+  HOST_OS_BUILD := windows_x86_64
+  EXE_SUFFIX := .exe
+else
+  LIBS=$(TF_MICROLITE_LIB) -ldl
+  HOST_OS_BUILD := linux_x86_64
+   EXE_SUFFIX :=
+endif
+
