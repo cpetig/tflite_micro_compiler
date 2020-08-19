@@ -33,7 +33,7 @@ CIFAR10_HDRS :=
 
 
 CIFAR10_COMPILED_SRC := \
-  examples/cifar10_compiled.cc  $(COMPILED_FILES_DIR)/cifar10_run_comp.cc examples/truck.c
+  $(COMPILED_FILES_DIR)/compiled_cifar10.cc  examples/cifar10_run_comp.cc examples/truck.c
 CIFAR10_COMPILED_HDRS :=
 
 
@@ -48,7 +48,7 @@ $(eval $(call microlite_test,cifar10,\
   $(CIFAR10_SRC),$(CIFAR10_HDRS)))
 
 $(eval $(call microlite_test,cifar10_compiled,\
-  $(CIFAR10_SRC),$(CIFAR10_HDRS)))
+  $(CIFAR10_COMPILED_SRC),$(CIFAR10_COMPILED_HDRS)))
 
 $(eval $(call microlite_test,hello_world,\
   $(HELLO_WORLD_SRC),$(HELLO_WORLD_HDRS)))
