@@ -6,7 +6,8 @@ COMPILED_FILES_SELECTION ?= generated
 
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
 
-HOST_MAKE_ARGS = -f IFX_Makefile TARGET_ARCH=i386 LOCAL_LDFLAGS=-static
+HOST_MAKE_ARGS = -f IFX_Makefile 
+
 LOCAL_CLEANS = examples/generated
 
 ifeq ($(OS),Windows_NT)
