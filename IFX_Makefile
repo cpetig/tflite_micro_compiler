@@ -11,6 +11,8 @@ LOCAL_CLEANS = examples/generated
 
 ifeq ($(OS),Windows_NT)
     EXE_SUFFIX=.exe
+else
+    LOCAL_LDFLAGS=-ldl
 endif
 
 EXAMPLE_TYPE ?= generated
