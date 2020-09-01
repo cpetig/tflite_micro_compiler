@@ -21,7 +21,7 @@ class Compiler {
   // prefix: This string is prepended to every global name.
   Compiler(const void *modelData, const std::string &prefix = "model_");
 
-  void writeSource(std::ostream &out);
+  void writeSource(std::ostream &out, std::string const& headerfilename);
   void writeHeader(std::ostream &out);
 
   // Returns a name that describes a tensors relation to network layers.

@@ -43,7 +43,7 @@ tflmc::CodeWriter::CodeWriter(std::ostream& out,
   // Setup stream: Print booleans as string:
   out_ << std::boolalpha;
   // Print floats with precision that is sufficient for exact back-conversion:
-  out_ << std::setprecision(std::numeric_limits<double>::max_digits10);
+  out_ << std::setprecision(std::numeric_limits<double>::max_digits10) << std::scientific;
 
   out_ << "// This file is generated. Do not edit.\n";
   {
@@ -85,7 +85,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteFullyConnectedParams const* p =
           (TfLiteFullyConnectedParams const*)data;
       out_ << to_string(p->activation) << ", " << to_string(p->weights_format)
-           << ", " << p->keep_num_dims 
+           << ", " << to_string(p->keep_num_dims)
            << " };";
     } break;
     case tflite::BuiltinOperator_MAX_POOL_2D:
@@ -133,10 +133,13 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);
       uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
-      out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
+      if (alignment>1) {
+        out_ << "ALIGN(" << alignment << ") ";
+      }
+      out_ << "uint8_t " << name << "[" << datalen
            << "] = { ";
       for (uint32_t i = 0; i < datalen; ++i)
-        out_ << int(((uint8_t const*)data)[i]) << ", ";
+        out_ << int(((uint8_t const*)data)[i]) << "U, ";
       out_ << " }; /* op type " << int(op) << "="
            << tflite::EnumNameBuiltinOperator(op) << " */";
     } break;
@@ -166,15 +169,15 @@ void tflmc::CodeWriter::writeIntArrayData(const TfLiteIntArray& arr) {
 }
 
 // outputting int8_t as a character is not what we intend here, we want to see
-// the value, so we introduce printT
+// the value, so we introduce printT, postfix might be F or U or LL etc
 template <class T, class printT>
 static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
                                  const std::string& tname,
-                                 const std::string& name) {
+                                 const std::string& name, const std::string& postfix) {
   if (t.dims->size == 0) {  // special case 0 dimensions, we output an array to
                             // avoid distinction from >0 dimension at every use
     out_ << "const " << tname << " " << name << "[1] = { "
-         << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
+         << (printT)(tflite::GetTensorData<T>(&t)[0]) << postfix << " };\n";
     return;
   }
   uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
@@ -185,15 +188,15 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   if (t.dims->size == 1)  // one dimension: Single line of data
   {
     for (uint32_t i = 0; i < t.dims->data[0]; ++i)
-      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
+      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << postfix << ", ";
     out_ << "};\n";
   } else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
   {
     for (uint32_t i = 0; i < t.dims->data[0]; ++i) {
       out_ << "\n  ";
       for (uint32_t j = 0; j < t.dims->data[1]; ++j)
-        out_ << (printT)(tflite::GetTensorData<T>(&t)[i * t.dims->data[1] + j])
-             << ", ";
+        out_ << (printT)(tflite::GetTensorData<T>(&t)[i * t.dims->data[1] + j]) 
+            << postfix << ", ";
     }
     out_ << "\n};\n";
   } else  // More dimensions: Inner two dimensions per line (space between two
@@ -222,7 +225,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
         for (uint32_t k = 0; k < inner_dim; ++k)
           out_ << (printT)(tflite::GetTensorData<T>(
                       &t)[(i * middle_dim + j) * inner_dim + k])
-               << ",";
+               << postfix << ",";
         out_ << " ";  // separator between middle indices
       }
     }
@@ -230,23 +233,23 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   }
 }
 
-#define DUMP_TENSOR2(TfType, CType, PrintType)                     \
+#define DUMP_TENSOR2(TfType, CType, PrintType, PostFix)                     \
   case TfType:                                                     \
-    dump_tensor_contents<CType, PrintType>(out_, t, #CType, name); \
+    dump_tensor_contents<CType, PrintType>(out_, t, #CType, name, PostFix); \
     break
 
 void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
                                     const std::string& name) {
   switch (t.type) {
-    DUMP_TENSOR2(kTfLiteFloat32, float, float);
-    DUMP_TENSOR2(kTfLiteInt32, int32_t, int32_t);
-    DUMP_TENSOR2(kTfLiteUInt8, uint8_t, int32_t);
-    DUMP_TENSOR2(kTfLiteInt64, int64_t, int64_t);
+    DUMP_TENSOR2(kTfLiteFloat32, float, float, "F");
+    DUMP_TENSOR2(kTfLiteInt32, int32_t, int32_t, "");
+    DUMP_TENSOR2(kTfLiteUInt8, uint8_t, int32_t, "U");
+    DUMP_TENSOR2(kTfLiteInt64, int64_t, int64_t, "");
     // DUMP_TENSOR2(kTfLiteString);
     // DUMP_TENSOR2(kTfLiteBool, bool);
-    DUMP_TENSOR2(kTfLiteInt16, int16_t, int16_t);
+    DUMP_TENSOR2(kTfLiteInt16, int16_t, int16_t, "");
     // DUMP_TENSOR2(kTfLiteComplex64);
-    DUMP_TENSOR2(kTfLiteInt8, int8_t, int32_t);
+    DUMP_TENSOR2(kTfLiteInt8, int8_t, int32_t, "");
     // DUMP_TENSOR2(kTfLiteFloat16);
     //DUMP_TENSOR2(kTfLiteFloat64, double, double);
     default: {
@@ -265,7 +268,7 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
     out_ << "const TfArray<" << aq->scale->size << ", float> " << name
          << "_scale = { " << aq->scale->size << ", { ";
     for (int i = 0; i < aq->scale->size; i++) {
-      out_ << aq->scale->data[i] << ", ";
+      out_ << aq->scale->data[i] << "F, ";
     }
     out_ << "} };\n";
     out_ << "const TfArray<" << aq->zero_point->size << ", int> " << name

@@ -19,10 +19,10 @@ limitations under the License.
 #include "compiled_hello.cpp.h"
 
 void test_compiled(void) {
-	hello_init();
-	tflite::GetTensorData<float>(hello_input(0))[0]= 1.57f;
-	hello_invoke();
-	float out = tflite::GetTensorData<float>(hello_output(0))[0];
+	hello_::init();
+	tflite::GetTensorData<float>(hello_::input(0))[0]= 1.57f;
+	hello_::invoke();
+	float out = tflite::GetTensorData<float>(hello_::output(0))[0];
 	std::cerr << "compiled result " << out << std::endl;
 }
 

@@ -14,6 +14,7 @@ std::string to_string(TfLiteFusedActivation t);
 std::string to_string(TfLiteFullyConnectedWeightsFormat t);
 std::string to_string(TfLitePadding t);
 std::string to_string(TfLitePaddingValues const& v);
+std::string to_string(bool v);
 
 }  // namespace tflmc
 

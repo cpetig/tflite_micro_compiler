@@ -106,3 +106,10 @@ std::string tflmc::to_string(TfLitePaddingValues const& v) {
       << v.height_offset << " }";
   return out.str();
 }
+
+std::string tflmc::to_string(bool v) {
+  switch (v) {
+    NAME(false);
+    NAME(true);
+  }
+}

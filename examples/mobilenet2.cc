@@ -21,14 +21,14 @@ limitations under the License.
 extern "C" const unsigned char gnu_ppm[];
 
 void run() {
-  TfLiteTensor* model_input = mobilenet_input(0);
+  TfLiteTensor* model_input = mobilenet_::input(0);
   memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
 
-  TfLiteStatus invoke_status = mobilenet_invoke();
+  TfLiteStatus invoke_status = mobilenet_::invoke();
   if (invoke_status != kTfLiteOk) {
     fprintf(stderr, "Invoke failed\n");
   }
-  TfLiteTensor* model_output = mobilenet_output(0);
+  TfLiteTensor* model_output = mobilenet_::output(0);
   uint32_t best=0;
   uint32_t bestval=model_output->data.uint8[0];
   for (uint32_t i=1;i<1001;++i) {
@@ -41,7 +41,7 @@ void run() {
 }
 
 int main(int argc, char** argv) {
-  mobilenet_init();
+  mobilenet_::init();
   run();
   return 0;
 }
