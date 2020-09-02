@@ -121,7 +121,9 @@ bool tflmc::Compiler::init(const void *modelData) {
       new tflite::MicroInterpreter(
         model_, resolver_, aligned_arena_start_, arena_size_,
         &microErrReporter_));
-
+#if TFLMC_USE_INTERPRETER_HOOKS
+  tflmc::SetRecordAllocationhooks( interpreter_.get(), aligned_arena_start_, arena_size_);
+#endif
   // Allocate memory from the tensor_arena for the model's tensors.
   TfLiteStatus allocate_status = interpreter_->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
@@ -189,8 +191,12 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = 
-    tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE, SUFFICIENT_ARENA_ALIGNMENT);
+#if TFLMC_USE_INTERPRETER_HOOKS
+  RecordScratchBufferAllocations(interpreter_.get()); 
+#else
+  tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE, SUFFICIENT_ARENA_ALIGNMENT);
+#endif
+  auto runtimeAllocations = tflmc::RecordedAllocations();
 #if 0
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
   for (const auto &alloc : runtimeAllocations) {

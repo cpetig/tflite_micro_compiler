@@ -3,6 +3,7 @@ $(foreach setting, $(shell ../GET_PROJECT_SETTINGS.sh --makefile --id_prefix IFX
 INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 
 COMPILED_FILES_SELECTION ?= generated
+LOCAL_CPPFLAGS += -DTFLMC_USE_INTERPRETER_HOOKS
 
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
 

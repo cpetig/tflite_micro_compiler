@@ -1,10 +1,14 @@
 #include <sstream>
-#include <iostream>
 #include <memory>
 #include <map>
+
+#if !TFLMC_USE_INTERPRETER_HOOKS
 #define private public
+#endif
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#if !TFLMC_USE_INTERPRETER_HOOKS
 #undef private
+#endif
 
 #include "CustomOperators.h"
 #include "RecordAllocations.h"
@@ -13,7 +17,6 @@
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 
 static std::vector<tflmc::Allocation> g_loggedAllocations;
-static tflite::MicroAllocator *g_allocator;
 static int g_currentNodeIndex = -1;
 static uint8_t *g_arenaPtr = nullptr;
 
@@ -25,21 +28,109 @@ struct ScratchBufferInfo {
 };
 
 static std::map<int, ScratchBufferInfo> g_logged_scratch_buffers;
+
+
+
+#if TFLMC_USE_INTERPRETER_HOOKS
+
+
+static  tflite::MicroInterpreter::TfLiteContextHooks *g_tflm_hooks;
+
+
 static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
                                                     size_t bytes, void **ptr) {
-  auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
+  auto retVal =  g_tflm_hooks->AllocatePersistentBuffer(ctx, bytes, ptr);
   assert(retVal == kTfLiteOk && "Alloc failure");
-#if 0
-  ptrdiff_t offset = -(g_arenaPtr - (uint8_t *)*ptr + g_arena_size);
-#endif
   ptrdiff_t offset = (uint8_t *)*ptr - g_arenaPtr;
-  std::cout << "PERSISTENT FOR " << g_currentNodeIndex << " offset " << offset << " for " << bytes << std::endl;
 
   g_loggedAllocations.push_back(
       {offset, bytes,
        g_currentNodeIndex, tflmc::AllocKind::Persistent});
   return retVal;
 }
+
+
+static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
+                                                       size_t bytes,
+                                                       int *buffer_idx) {
+
+  auto res = g_tflm_hooks->RequestScratchBufferInArena(ctx, bytes,  buffer_idx);
+  if (res == kTfLiteOk) {
+    g_logged_scratch_buffers[*buffer_idx] = {g_currentNodeIndex, bytes};
+  }
+  return res;                                         
+}
+
+
+
+static void* LoggingGetScratchBuffer(struct TfLiteContext* ctx, int buffer_idx) {
+  return g_tflm_hooks->GetScratchBuffer (ctx, buffer_idx);
+}
+
+static void LoggingSetNodeIndex(const struct TfLiteContext* context,
+                                int idx) {
+  g_currentNodeIndex = idx;
+  return g_tflm_hooks->SetNodeIndex(context, idx);
+}
+
+static  tflite::MicroInterpreter::TfLiteContextHooks g_recording_hooks =
+{
+  LoggingAllocatePersistentBuffer,
+  LoggingRequestScratchBufferInArena,
+  LoggingGetScratchBuffer,
+  LoggingSetNodeIndex
+  
+};
+
+void tflmc::SetRecordAllocationhooks( tflite::MicroInterpreter *interpreter, 
+                              uint8_t *arena_start,
+                              size_t arena_size) {
+  g_tflm_hooks = interpreter->getHooks();
+  g_arenaPtr = arena_start;
+  g_arena_size = arena_size;
+  interpreter->setHooks(&g_recording_hooks);
+}
+
+void  tflmc::RecordScratchBufferAllocations(tflite::MicroInterpreter *interpreter)
+{
+  auto ctx = interpreter->getTFLContext();
+  for( auto &sb_i : g_logged_scratch_buffers )
+  {
+      auto sb_idx = sb_i.first;
+      void *sb_start = g_tflm_hooks->GetScratchBuffer(ctx, sb_idx );
+      assert(sb_start != nullptr && "Unknown Scratch Buffer");
+      ptrdiff_t offset = (uint8_t *)sb_start - g_arenaPtr;
+      g_loggedAllocations.push_back(
+        {offset, sb_i.second.bytes,
+         sb_i.second.node_id, tflmc::AllocKind::Scratch});
+  }
+}
+
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i) {
+  auto ctx = interpreter->getTFLContext();
+  return ctx->GetEvalTensor(ctx, i);
+}
+
+TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
+  auto ctx = interpreter->getTFLContext();
+  return ctx->GetTensor(ctx, i);
+}
+
+#else
+
+static tflite::MicroAllocator *g_allocator;
+static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                                    size_t bytes, void **ptr) {
+  auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
+  assert(retVal == kTfLiteOk && "Alloc failure");
+  ptrdiff_t offset = (uint8_t *)*ptr - g_arenaPtr;
+
+  g_loggedAllocations.push_back(
+      {offset, bytes,
+       g_currentNodeIndex, tflmc::AllocKind::Persistent});
+  return retVal;
+}
+
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
                                                        int *buffer_idx) {
@@ -47,20 +138,17 @@ static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
   auto res =  g_allocator->RequestScratchBufferInArena(g_currentNodeIndex, bytes,
                                                        buffer_idx);
   if (res == kTfLiteOk) {
-    std::cout << "SCRATCH FOR " << g_currentNodeIndex << " " << bytes << std::endl;
     g_logged_scratch_buffers[*buffer_idx] = {g_currentNodeIndex, bytes};
   }
   return res;                                         
 }
 
 
-  // HACK: here in essence, create a duplicate interpreter here and re-execute
+  // HACK: here in essence, we create a duplicate interpreter here and re-execute
   // Fragmnents of MicroInterpreter::AllocateTensors() with instrumented context
-  // API calls.  Painful to maintain - surely simpler to maintain a patch
-  // that adds hooks to MicroInterpreter to gather data from an actual MicroInterpreter::AllocateTensors() 
-  // call
+  // API calls.  
 
-std::vector<tflmc::Allocation> tflmc::RecordAllocations(
+void tflmc::RecordAllocations(
     const tflite::Model *model, 
      size_t arena_size,  size_t arena_alignment) {
 
@@ -123,19 +211,14 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
       auto sb_idx = sb_i.first;
       void *sb_start = allocator->GetScratchBuffer( sb_idx );
       assert(sb_start != nullptr && "Unknown Scratch Buffer");
-  #if 0
-      ptrdiff_t offset = -(g_arenaPtr - (uint8_t *)sb_start + g_arena_size);
-  #endif
       ptrdiff_t offset = (uint8_t *)sb_start - g_arenaPtr;
-      std::cout << "SCRATCH FOR " << sb_i.second.node_id << " offset " << offset << " for " << sb_i.second.bytes << std::endl;
-
       g_loggedAllocations.push_back(
-      {offset, sb_i.second.bytes,
-       sb_i.second.node_id, tflmc::AllocKind::Scratch});
+        {offset, sb_i.second.bytes,
+         sb_i.second.node_id, tflmc::AllocKind::Scratch});
   }
-  
-  return g_loggedAllocations;
+
 }
+
 
 TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i) {
   auto ctx = &interpreter->context_;
@@ -145,4 +228,10 @@ TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, in
 TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
   auto ctx = &interpreter->context_;
   return ctx->GetTensor(ctx, i);
+}
+
+#endif
+
+const std::vector<tflmc::Allocation> &tflmc::RecordedAllocations() { 
+  return g_loggedAllocations; 
 }
