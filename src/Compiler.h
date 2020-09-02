@@ -79,7 +79,9 @@ class Compiler {
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
   tflite::AllOpsResolver resolver_;
-  std::vector<uint8_t> arena_buf_;
+  SufficientArena arena_;
+  uint8_t *aligned_arena_start_;
+  size_t arena_size_; 
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;
 

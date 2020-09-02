@@ -16,6 +16,10 @@
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
 #endif
 
+#ifndef SUFFICIENT_ARENA_ALIGNMENT 
+#define SUFFICIENT_ARENA_ALIGNMENT (16)
+#endif
+
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION != 100
 #error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
@@ -71,7 +75,10 @@ bool tflmc::CompileFile(const std::string &modelFileName,
 }
 
 tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix)
-    : prefix_(prefix) {
+    : prefix_(prefix)
+    , arena_(SUFFICIENT_ARENA_SIZE, SUFFICIENT_ARENA_ALIGNMENT) {
+  aligned_arena_start_ = arena_.alginedBufferStart();
+  arena_size_ = SUFFICIENT_ARENA_SIZE;
   if (!init(modelData)) {
     throw std::runtime_error("Could not set up compiler");
   }
@@ -105,13 +112,14 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (auto outIndex : *subgraph_->outputs()) {
     outputTensorIndices_.push_back(outIndex);
   }
-  tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver_);
+  tflmc::custom_operator_handle custom =
+     tflmc::LoadCustom(static_cast<tflite::MicroOpResolver *>(&resolver_));
 
   // Build an interpreter to run the model with.
-  arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
+
   interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
       new tflite::MicroInterpreter(
-        model_, resolver_, arena_buf_.data(), arena_buf_.size(),
+        model_, resolver_, aligned_arena_start_, arena_size_,
         &microErrReporter_));
 
   // Allocate memory from the tensor_arena for the model's tensors.
@@ -136,7 +144,7 @@ bool tflmc::Compiler::init(const void *modelData) {
       memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
       romOffset += tensor->bytes;
     } else {
-      ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
+      ptrdiff_t offset = (uint8_t *)tensor->data.data - aligned_arena_start_;
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
@@ -181,26 +189,44 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
+  auto runtimeAllocations = 
+    tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE, SUFFICIENT_ARENA_ALIGNMENT);
+#if 0
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
   for (const auto &alloc : runtimeAllocations) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
   }
   size_t totalRuntimeAllocSize = 0;
+#endif
   for (const auto &alloc : runtimeAllocations) {
+#if 0
     // TODO: This drops the alignment between buffers. Is this fine?
     totalRuntimeAllocSize += alloc.len;
     ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
+#endif
+    ptrdiff_t offset = alloc.offset;
+    const char *kind;
+    switch( alloc.kind ) {
+      case tflmc::AllocKind::Persistent : kind = "PersistentBuf"; break;
+      case tflmc::AllocKind::Scratch : kind = "ScratchBuf"; break;
+      default:
+        assert(false && "Urecognized allocation kind");
+    }
     memMap_.recordRAM(offset, alloc.len,
-                      "PersistentBuf" + std::to_string(alloc.nodeIndex));
+                     kind + std::to_string(alloc.nodeIndex));
   }
+
 
   // This includes:
   // - Tensors
   // - Scratch buffers
   // - Persistent buffers
   // tensor metadata is not included, since we declare them outside the arena
+#if 0
   arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
+#endif
+  memMap_.stripLargestRAMGap(SUFFICIENT_ARENA_ALIGNMENT);
+  arenaBufferSize_ = memMap_.requiredBufferSize();
 
   // TODO: This is overestimating by quite a bit because of ABI differences.
   size_t tensorMetaSize = tensors_.size() * sizeof(TfLiteTensor);
@@ -213,7 +239,6 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   memMap_.report();
   tflmc::UnloadCustom(custom);
-
   return true;
 }
 
@@ -348,7 +373,7 @@ TfLiteNode tflNodes[)"
       wr << "(void*)tensor_data" << i;
     } else {
       wr << "tensor_arena + "
-         << ((uintptr_t)t->data.data - (uintptr_t)arena_buf_.data());
+         << ((uintptr_t)t->data.data - (uintptr_t)aligned_arena_start_);
     }
     wr << ", "
        << "(TfLiteIntArray*)&tensor_dimension" << i << ", ";

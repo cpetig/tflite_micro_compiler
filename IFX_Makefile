@@ -38,7 +38,7 @@ COMPILED_EXAMPLES = $(foreach n, $(EXAMPLE_NETS), examples/generated/compiled_$(
 
 regenerate_examples: $(COMPILED_EXAMPLES)
 	
-examples/generated/compiled_%.cc: examples/%.tflite $(COMPILER)
+examples/generated/compiled_%.cc: examples/%.tflite $(COMPILER_EXE)
 	@mkdir -p examples/generated
 	$(COMPILER_EXE) $< $@  $*_
 
