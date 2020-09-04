@@ -4,6 +4,7 @@
 
 
 #include <cstdint>
+#include <cstddef>
 
 // We need to keep the data array aligned on some architectures.
 #ifdef __has_attribute

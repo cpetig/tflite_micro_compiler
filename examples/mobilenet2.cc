@@ -13,35 +13,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include <iostream>
+
+#include <stdio.h>
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "compiled_mobilenet.cc.h"
 
 extern "C" const unsigned char gnu_ppm[];
 
-void run() {
+int run() {
   TfLiteTensor* model_input = mobilenet_input(0);
   memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
 
   TfLiteStatus invoke_status = mobilenet_invoke();
   if (invoke_status != kTfLiteOk) {
     fprintf(stderr, "Invoke failed\n");
+    return 1;
   }
   TfLiteTensor* model_output = mobilenet_output(0);
-  uint32_t best=0;
-  uint32_t bestval=model_output->data.uint8[0];
+  int best=0;
+  int bestval=model_output->data.uint8[0];
   for (uint32_t i=1;i<1001;++i) {
     if (model_output->data.uint8[i]>bestval) {
       bestval= model_output->data.uint8[i];
       best=i;
     }
   }
-  printf("Best match is %u with %d%%\n", best, bestval * 100/256);
+  printf("Best match is %d with %d%%\n", best, bestval * 100/256);
+  return 0;
 }
 
 int main(int argc, char** argv) {
   mobilenet_init();
-  run();
-  return 0;
+  return run();
 }

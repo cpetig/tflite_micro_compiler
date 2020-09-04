@@ -76,15 +76,15 @@ void run() {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
   }
   TfLiteTensor* model_output = interpreter->output(0);
-  uint32_t best=0;
-  uint32_t bestval=model_output->data.uint8[0];
+  int best=0;
+  int bestval=model_output->data.uint8[0];
   for (uint32_t i=1;i<1001;++i) {
     if (model_output->data.uint8[i]>bestval) {
       bestval= model_output->data.uint8[i];
       best=i;
     }
   }
-  printf("Best match is %u with %d%%\n", best, (int)(bestval * 100 / 255));
+  printf("Best match is %d with %d%%\n", best, (bestval * 100 / 255));
 }
 
 int main(int argc, char** argv) {
