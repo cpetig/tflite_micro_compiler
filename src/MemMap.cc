@@ -1,5 +1,4 @@
 #include "MemMap.h"
-
 #include <algorithm>
 #include <cassert>
 #include <memory>
@@ -27,6 +26,26 @@ void tflmc::MemMap::recordRAM(ptrdiff_t offset, size_t len,
                               const std::string &tag) {
   m_ramEntries.push_back({offset, len, tag});
   updateUsedList(offset, len);
+}
+
+void tflmc::MemMap::recordRAMScratchBuf(int idx,
+                                    ptrdiff_t offset, size_t len,
+                                    const std::string &tag) {
+  m_scratchbuf_map[idx] = m_ramEntries.size();
+  recordRAM(offset, len, tag);
+}
+
+std::vector<ptrdiff_t> tflmc::MemMap::scratchBufOffsets() {
+    std::vector<ptrdiff_t> res;
+    for( auto &sb : m_scratchbuf_map )
+    {
+      assert(sb.first >= 0);
+      size_t req_sb_table_size = sb.first+1;
+      res.resize(std::max(req_sb_table_size,res.size()));
+      res[sb.first] = m_ramEntries[sb.second].base;
+    }
+
+    return res;
 }
 
 void tflmc::MemMap::updateUsedList(ptrdiff_t used_begin, size_t used_len) {

@@ -86,6 +86,7 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
+  size_t scratchBuffersAllocated_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;

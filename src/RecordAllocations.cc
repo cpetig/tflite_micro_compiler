@@ -22,6 +22,7 @@ static uint8_t *g_arenaPtr = nullptr;
 
 static ptrdiff_t g_arena_size = 0;
 
+
 struct ScratchBufferInfo {
     	int node_id;
       size_t bytes;
@@ -45,7 +46,7 @@ static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
 
   g_loggedAllocations.push_back(
       {offset, bytes,
-       g_currentNodeIndex, tflmc::AllocKind::Persistent});
+       g_currentNodeIndex, tflmc::AllocKind::Persistent, 0});
   return retVal;
 }
 
@@ -102,9 +103,10 @@ void  tflmc::RecordScratchBufferAllocations(tflite::MicroInterpreter *interprete
       ptrdiff_t offset = (uint8_t *)sb_start - g_arenaPtr;
       g_loggedAllocations.push_back(
         {offset, sb_i.second.bytes,
-         sb_i.second.node_id, tflmc::AllocKind::Scratch});
+         sb_i.second.node_id, tflmc::AllocKind::Scratch, sb_i.first});
   }
 }
+
 
 TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i) {
   auto ctx = interpreter->getTFLContext();

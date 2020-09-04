@@ -16,7 +16,9 @@ struct Allocation {
   size_t len;
   int nodeIndex;
   AllocKind kind;
+  int buffer_index;
 };
+
 
 
   // We can try to use a stock kernel but
@@ -35,10 +37,12 @@ void SetRecordAllocationhooks(tflite::MicroInterpreter *interpreter,
 
 void RecordScratchBufferAllocations(tflite::MicroInterpreter *interpreter);
 
+
 #else
 void RecordAllocations(
   const tflite::Model *model,  size_t arena_size, size_t arena_alignment);
 #endif
+
 
 const std::vector<Allocation> &RecordedAllocations();
 

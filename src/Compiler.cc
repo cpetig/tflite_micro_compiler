@@ -192,34 +192,27 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
 #if TFLMC_USE_INTERPRETER_HOOKS
-  RecordScratchBufferAllocations(interpreter_.get()); 
+   tflmc::RecordScratchBufferAllocations(interpreter_.get()); 
 #else
   tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE, SUFFICIENT_ARENA_ALIGNMENT);
 #endif
   auto runtimeAllocations = tflmc::RecordedAllocations();
-#if 0
-  ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
+
   for (const auto &alloc : runtimeAllocations) {
-    minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
-  }
-  size_t totalRuntimeAllocSize = 0;
-#endif
-  for (const auto &alloc : runtimeAllocations) {
-#if 0
-    // TODO: This drops the alignment between buffers. Is this fine?
-    totalRuntimeAllocSize += alloc.len;
-    ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
-#endif
-    ptrdiff_t offset = alloc.offset;
-    const char *kind;
     switch( alloc.kind ) {
-      case tflmc::AllocKind::Persistent : kind = "PersistentBuf"; break;
-      case tflmc::AllocKind::Scratch : kind = "ScratchBuf"; break;
+      case tflmc::AllocKind::Persistent : 
+        memMap_.recordRAM(alloc.offset, alloc.len,
+                      "PersistentBuf_" + std::to_string(alloc.nodeIndex));
+        break;
+      case tflmc::AllocKind::Scratch : 
+        memMap_.recordRAMScratchBuf(alloc.buffer_index, alloc.offset, alloc.len,
+                     "ScratchBuf_" + std::to_string(alloc.nodeIndex) + "_" +  std::to_string(alloc.buffer_index));
+        break;
       default:
         assert(false && "Urecognized allocation kind");
     }
-    memMap_.recordRAM(offset, alloc.len,
-                     kind + std::to_string(alloc.nodeIndex));
+
+
   }
 
 
@@ -228,9 +221,6 @@ bool tflmc::Compiler::init(const void *modelData) {
   // - Scratch buffers
   // - Persistent buffers
   // tensor metadata is not included, since we declare them outside the arena
-#if 0
-  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
-#endif
   memMap_.stripLargestRAMGap(SUFFICIENT_ARENA_ALIGNMENT);
   arenaBufferSize_ = memMap_.requiredBufferSize();
 
@@ -439,9 +429,38 @@ TfLiteNode tflNodes[)"
     wr << "},\n";
   }
   wr << "};";
-  // TODO: This code assumes that persistent allocations are made from the end
-  // (which is true for the current implementation)
-  // @IFX_PATCH@
+
+
+  auto &&scratchbuf_offsets =  memMap_.scratchBufOffsets();
+  wr << R"(
+static size_t scratchbuf_offsets[] = {
+  )";
+  
+  size_t offsets  = 0;
+  for (auto o : scratchbuf_offsets) {
+    wr << std::to_string(o) << ",";
+    ++offsets;
+    if (offsets % 10 == 0) {
+      wr << "\n";
+    } else { 
+      wr << " ";
+    }
+  }
+  
+  // To suppress warnings add dummy element if no scratch bufs
+  if (scratchbuf_offsets.empty()) {
+    wr << "0";
+  }
+  wr << R"(
+};  
+  )";
+     
+  // TODO: This code assumes that:
+  // * persistent allocations are made from the end
+  // * scratch buffer indexes are allocated (couting up from 0
+  // Both are true for the current (02.09.2020) implementation
+  // it wuold be good to add some sanity checking for debug builds here to ease maintenance
+  // in the face of upstream changes to tflite(u)
   wr << R"(
 static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignore,
                                                  size_t bytes, void **ptr) {
@@ -452,15 +471,41 @@ static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignore,
   return kTfLiteOk;
 }
 
-static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
+static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *ignore,
                                        int tensor_idx) {
   return &evalTensors[tensor_idx];
 }
-} // namespace
 
-TfLiteStatus )"
+  // TODO: This code assumes that persistent 
+
+static TfLiteStatus RequestScratchBufferInArena(TfLiteContext *ignored,
+                                                size_t bytes_ignored,
+                                                int *buffer_idx) {
+  static int idx_ctr = 0;
+  *buffer_idx = idx_ctr;
+  ++idx_ctr;
+  return kTfLiteOk;
+}
+
+static void* GetScratchBuffer(struct TfLiteContext *ignore, int buffer_idx) {
+  return tensor_arena + scratchbuf_offsets[buffer_idx];
+}
+)";
+
+// TODO:  Really need to support AllocateBufferForEval.  Should be easy - just need to
+// permit allocating a suitable "gap" in the arena or a dedicated scratchpad area.
+
+wr << R"(
+} // namespace
+)";
+
+
+
+wr << R"(TfLiteStatus )"
      << prefix_ << R"(init() {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
+  ctx.RequestScratchBufferInArena = RequestScratchBufferInArena;
+  ctx.GetScratchBuffer = &GetScratchBuffer;
   ctx.GetEvalTensor = &GetEvalTensor;
   ctx.tensors = tflTensors;
 )";

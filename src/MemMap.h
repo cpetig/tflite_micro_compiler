@@ -26,8 +26,13 @@ protected:
 class MemMap {
  public:
 
+
   void recordROM(ptrdiff_t offset, size_t len, const std::string &tag);
   void recordRAM(ptrdiff_t offset, size_t len, const std::string &tag);
+  void recordRAMScratchBuf(int idx, ptrdiff_t offset, size_t len, const std::string &tag);
+
+  std::vector<ptrdiff_t> scratchBufOffsets();
+
   void report() const;
 
   void stripLargestRAMGap(size_t alginment_to_maintain);
@@ -46,8 +51,12 @@ class MemMap {
   std::vector<Entry> m_ramEntries;
 
   // [begin,end) of unused memory sections
-  typedef std::map<ptrdiff_t, ptrdiff_t> freelist_map_t;
-  freelist_map_t m_usedList;
+  typedef std::map<ptrdiff_t, ptrdiff_t> occupancy_map_t;
+  occupancy_map_t m_usedList;
+
+  // Table of RAM allocations associated with scratchbufs.
+  typedef std::map<int, size_t>  scratchbuf_map_t;
+  scratchbuf_map_t m_scratchbuf_map;
 };
 
 }  // namespace tflmc

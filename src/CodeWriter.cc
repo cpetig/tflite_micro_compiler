@@ -144,15 +144,26 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
   out_ << '\n';
 }
 
+template<class TFArray>
+void writeTfArray( std::ostream &os, const TFArray *tfarray, const std::string &name, const char * suffix, const char *data_type_id)
+{
+    os << "const TfArray<" 
+          << tfarray->size << ", " 
+          << data_type_id << "> " 
+       << name << suffix
+       << " = { " << tfarray->size << ", { ";
+    for (int i = 0; i < tfarray->size; i++) {
+      os << tfarray->data[i] << ", ";
+    }
+    os << "} };\n";
+}
+
 void tflmc::CodeWriter::writeIntArray(const TfLiteIntArray& arr,
                                       const std::string& name) {
   if (arr.size == 0) {
     out_ << "const int " << name << " = 0; /* empty TfLiteIntArray */\n";
   } else {
-    out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
-         << arr.size << ", { ";
-    writeIntArrayData(arr);
-    out_ << " } };\n";
+    writeTfArray(out_, &arr, name, "", "int");
   }
 }
 
@@ -284,20 +295,15 @@ void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
   }
 }
 
+
+
 void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
                                           const std::string& name) {
+
   if (q.type == kTfLiteAffineQuantization) {
     auto aq = (TfLiteAffineQuantization const*)q.params;
-    out_ << "const TfArray<" << aq->scale->size << ", float> " << name
-         << "_scale = { " << aq->scale->size << ", { ";
-    for (int i = 0; i < aq->scale->size; i++) {
-      out_ << aq->scale->data[i] << ", ";
-    }
-    out_ << "} };\n";
-    out_ << "const TfArray<" << aq->zero_point->size << ", int> " << name
-         << "_zero = { " << aq->zero_point->size << ", { ";
-    writeIntArrayData(*aq->zero_point);
-    out_ << " } };\n";
+    writeTfArray(out_, aq->scale, name, "_scale", "float");
+    writeTfArray(out_,  aq->zero_point, name, "_zero", "int");
     out_ << "const TfLiteAffineQuantization " << name << " = { "
          << "(TfLiteFloatArray*)&" << name << "_scale, "
          << "(TfLiteIntArray*)&" << name << "_zero, " << aq->quantized_dimension
