@@ -7,7 +7,7 @@ LOCAL_CPPFLAGS += -DTFLMC_USE_INTERPRETER_HOOKS
 
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
 
-HOST_MAKE_ARGS = -f IFX_Makefile 
+HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
 
 LOCAL_CLEANS = examples/generated
 
@@ -25,15 +25,26 @@ EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e) $(e)_compiled )
 
 .PHONY: examples run_examples regenerate regenerate_examples build_compiler
 
+ifeq ($(TARGET),windows)
+  TEST_RUNNER :=
+else ifeq ($(TARGET),linux)
+  TEST_RUNNER :=
+else
+  TEST_RUNNER := $(TEST_SCRIPT) --no-check
+endif
+
 
 regenerate:
 	$(MAKE) $(HOST_MAKE_ARGS) compiler
-	$(MAKE) $(HOST_MAKE_ARGS) regenerate_examples
+	make $(HOST_MAKE_ARGS) regenerate_examples
 
-examples:  $(EXAMPLES) 
+examples:  regenerate
+	$(MAKE) -f IFX_Makefile build_examples
+
+build_examples: $(EXAMPLES)
 
 run_examples:  examples
-	set -e ; for f in $(EXAMPLES); do  $(GENDIR)bin/$${f}; done
+	set -e ; for f in $(EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(GENDIR)bin/$${f}; done
 
 COMPILED_EXAMPLES = $(foreach n, $(EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
 
