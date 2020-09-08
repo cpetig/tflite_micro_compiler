@@ -12,13 +12,13 @@
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
 
-#ifndef SUFFICIENT_ARENA_SIZE 
+#ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
 #endif
 
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION != 100
-#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
+#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Version 100 supported!"
 #endif
 #endif
 
@@ -27,8 +27,8 @@ bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &prefix) {
   // Load model flatbuffer.
   std::ifstream model_file(modelFileName, std::ios::binary | std::ios::ate);
-  if( ! model_file ) {
-      std::cerr << "Couod nto open " << modelFileName  << " for read\n";
+  if (!model_file) {
+    std::cerr << "Could not open " << modelFileName << " for read\n";
     return false;
   }
   auto sz = model_file.tellg();
@@ -42,7 +42,6 @@ bool tflmc::CompileFile(const std::string &modelFileName,
     std::cerr << "Failed to read model file\n";
     return false;
   }
-
 
   std::ofstream outFile(outFileName);
   if (!outFile) {
@@ -365,13 +364,13 @@ TfLiteNode tflNodes[)"
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
       if (t->quantization.details.type == kTfLiteSub8BitPackedUniformDetail) {
         wr << ", {kTfLiteSub8BitPackedUniformDetail, "
-              "{&quant_details" << i << "}}";
+              "{&quant_details"
+           << i << "}}";
       } else {
-          wr << ", {kTfLiteNoDetails, {}}";
+        wr << ", {kTfLiteNoDetails, {}}";
       }
 #endif
       wr << "},";
-
     }
     if (common_tensor_is_variable.None) {
       wr << std::to_string(t->is_variable)
