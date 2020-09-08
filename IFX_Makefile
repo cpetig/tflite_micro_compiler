@@ -3,9 +3,13 @@ $(foreach setting, $(shell ../GET_PROJECT_SETTINGS.sh --makefile --id_prefix IFX
 INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 
 COMPILED_FILES_SELECTION ?= generated
-LOCAL_CPPFLAGS += -DTFLMC_USE_INTERPRETER_HOOKS
+
+LOCAL_CPPFLAGS := -DTFLMC_USE_INTERPRETER_HOOKS
 
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
+
+
+.PHONY: echo_gendir
 
 HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
 
@@ -20,10 +24,20 @@ endif
 EXAMPLE_TYPE ?= generated
 COMPILER_EXE := $(GENDIR)bin/compiler$(EXE_SUFFIX)
 EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5
-EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e) $(e)_compiled )
+EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
+COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 
+BASE_TAGS := portable_optimized
+COMPILER_TAGS := $(BASE_TAGS)
+EXAMPLES_TAGS := $(BASE_TAGS)
+COMPILED_EXAMPLES_TAGS := $(BASE_TAGS)
 
-.PHONY: examples run_examples regenerate regenerate_examples build_compiler
+ifndef RUNTIME_KERNEL_VARIANT_SELECTION
+COMPILER_TAGS += record_model
+COMPILED_EXAMPLES_TAGS += recorded_model
+endif
+
+.PHONY: examples run_examples regenerate regenerate_examples build_compiler native_compiler
 
 ifeq ($(TARGET),windows)
   TEST_RUNNER :=
@@ -33,29 +47,45 @@ else
   TEST_RUNNER := $(TEST_SCRIPT) --no-check
 endif
 
+HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
+EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
+COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
 
-regenerate:
-	$(MAKE) $(HOST_MAKE_ARGS) compiler
+HOST_COMPILER:=$(HOST_COMPILER_GENDIR)bin/compiler$(EXE_SUFFIX)
+$(info HOST_COMPILER $(HOST_COMPILER))
+
+build_compiler:
+	$(MAKE) $(HOST_MAKE_ARGS) TAGS="$(COMPILER_TAGS)" compiler
+
+regenerate: build_compiler
 	make $(HOST_MAKE_ARGS) regenerate_examples
 
 examples:  regenerate
-	$(MAKE) -f IFX_Makefile build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" build_compiled_examples
 
 build_examples: $(EXAMPLES)
 
-run_examples:  examples
-	set -e ; for f in $(EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(GENDIR)bin/$${f}; done
+build_compiled_examples: $(COMPILED_EXAMPLES)
 
-COMPILED_EXAMPLES = $(foreach n, $(EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
+run_examples:  examples 
+	set -e ; for f in $(EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(EXAMPLES_GENDIR)/bin/$${f}; done
+	set -e ; for f in $(COMPILED_EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(COMPILED_EXAMPLES_GENDIR)/bin/$${f}; done
 
-regenerate_examples: $(COMPILED_EXAMPLES)
+COMPILED_MODELS = $(foreach n, $(EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
+
+regenerate_examples: $(COMPILED_MODELS)
 	
-examples/generated/compiled_%.cc: examples/%.tflite $(COMPILER_EXE)
+examples/generated/compiled_%.cc: examples/%.tflite $(HOST_COMPILER)
 	@mkdir -p examples/generated
-	$(COMPILER_EXE) $< $@  $*_
+	$(HOST_COMPILER) $< $@  $*_
 
 
-install: compiler
+install: build_compiler
 	mkdir -p "${INSTALLED_TFLITE_MICRO}"/bin
-	cp -a $(COMPILER_EXE) "${INSTALLED_TFLITE_MICRO}"/bin
+	cp -a $(HOST_COMPILER) "${INSTALLED_TFLITE_MICRO}"/bin
+
+mrproper:
+	rm -rf $(GENROOT_DIR) examples/generated/*
+
 
