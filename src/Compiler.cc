@@ -373,8 +373,7 @@ TfLiteNode tflNodes[)"
       wr << "},";
     }
     if (common_tensor_is_variable.None) {
-      wr << std::to_string(t->is_variable)
-         << ", ";  // TODO: is there a bool to string?
+      wr << t->is_variable << ", ";
     }
     wr << "},\n";
   }
