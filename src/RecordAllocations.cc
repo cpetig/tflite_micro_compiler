@@ -38,16 +38,15 @@ static std::map<int, ScratchBufferInfo> g_logged_scratch_buffers;
 static  tflite::MicroInterpreter::TfLiteContextHooks *g_tflm_hooks;
 
 
-static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
-                                                    size_t bytes, void **ptr) {
-  auto retVal =  g_tflm_hooks->AllocatePersistentBuffer(ctx, bytes, ptr);
-  assert(retVal == kTfLiteOk && "Alloc failure");
-  ptrdiff_t offset = (uint8_t *)*ptr - g_arenaPtr;
+static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx, size_t bytes) {
+  auto ptr =  g_tflm_hooks->AllocatePersistentBuffer(ctx, bytes);
+  assert(ptr != nullptr && "Alloc failure");
+  ptrdiff_t offset = (uint8_t *)ptr - g_arenaPtr;
 
   g_loggedAllocations.push_back(
       {offset, bytes,
        g_currentNodeIndex, tflmc::AllocKind::Persistent, 0});
-  return retVal;
+  return ptr;
 }
 
 
@@ -121,16 +120,16 @@ TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
 #else
 
 static tflite::MicroAllocator *g_allocator;
-static TfLiteStatus LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
-                                                    size_t bytes, void **ptr) {
-  auto retVal = g_allocator->AllocatePersistentBuffer(bytes, ptr);
-  assert(retVal == kTfLiteOk && "Alloc failure");
-  ptrdiff_t offset = (uint8_t *)*ptr - g_arenaPtr;
+static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                                    size_t bytes) {
+  auto ptr = g_allocator->AllocatePersistentBuffer(bytes);
+  assert(ptr != nullptr && "Alloc failure");
+  ptrdiff_t offset = (uint8_t *)ptr - g_arenaPtr;
 
   g_loggedAllocations.push_back(
       {offset, bytes,
-       g_currentNodeIndex, tflmc::AllocKind::Persistent});
-  return retVal;
+       g_currentNodeIndex, tflmc::AllocKind::Persistent, -1});
+  return ptr;
 }
 
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
@@ -179,6 +178,7 @@ void tflmc::RecordAllocations(
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
   ctx->RequestScratchBufferInArena = nullptr;
+  auto ctx_GetScratchBuffer =  ctx->GetScratchBuffer;
   ctx->GetScratchBuffer = nullptr;
 
 
@@ -211,12 +211,12 @@ void tflmc::RecordAllocations(
   for( auto &sb_i : g_logged_scratch_buffers )
   {
       auto sb_idx = sb_i.first;
-      void *sb_start = allocator->GetScratchBuffer( sb_idx );
+      void *sb_start = ctx_GetScratchBuffer( ctx, sb_idx );
       assert(sb_start != nullptr && "Unknown Scratch Buffer");
       ptrdiff_t offset = (uint8_t *)sb_start - g_arenaPtr;
       g_loggedAllocations.push_back(
         {offset, sb_i.second.bytes,
-         sb_i.second.node_id, tflmc::AllocKind::Scratch});
+         sb_i.second.node_id, tflmc::AllocKind::Scratch, -1});
   }
 
 }

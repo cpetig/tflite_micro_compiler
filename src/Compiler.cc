@@ -12,6 +12,10 @@
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
 
+#if TF_LITE_MICRO_RECORD_STATIC_KERNEL_VARIANT
+#include "tensorflow/lite/micro/kernels/pointer_collector.h"
+#endif
+
 #ifndef SUFFICIENT_ARENA_SIZE 
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
 #endif
@@ -462,13 +466,12 @@ static size_t scratchbuf_offsets[] = {
   // it wuold be good to add some sanity checking for debug builds here to ease maintenance
   // in the face of upstream changes to tflite(u)
   wr << R"(
-static TfLiteStatus AllocatePersistentBuffer(struct TfLiteContext* ignore,
-                                                 size_t bytes, void **ptr) {
+static void *AllocatePersistentBuffer(struct TfLiteContext* ignore,
+                                                 size_t bytes) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
 
   AllocPtr -= bytes;
-  *ptr = AllocPtr;
-  return kTfLiteOk;
+  return AllocPtr;
 }
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *ignore,
@@ -624,7 +627,12 @@ TfLiteStatus )"
   }
   return kTfLiteOk;
 }
+
 )";
+
+#if TF_LITE_MICRO_RECORD_STATIC_KERNEL_VARIANT
+  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
+#endif
 }
 
 void tflmc::Compiler::writeHeader(std::ostream &out) {
