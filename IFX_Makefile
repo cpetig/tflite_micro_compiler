@@ -6,13 +6,11 @@ COMPILED_FILES_SELECTION ?= generated
 
 LOCAL_CPPFLAGS := -DTFLMC_USE_INTERPRETER_HOOKS
 
+# The actual tflite(u) Makefile!!
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
 
 
-.PHONY: echo_gendir
-
 HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
-
 LOCAL_CLEANS = examples/generated
 
 ifeq ($(OS),Windows_NT)
@@ -37,7 +35,11 @@ COMPILER_TAGS += record_model
 COMPILED_EXAMPLES_TAGS += recorded_model
 endif
 
-.PHONY: examples run_examples regenerate regenerate_examples build_compiler native_compiler
+#
+# Set FOOTPRINT_ONLY to compare memory footprints of models (logging and test stimulus/checks not compiled)
+ifdef FOOTPRINT_ONLY
+EXAMPLES_SETTINGS := LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY
+endif
 
 ifeq ($(TARGET),windows)
   TEST_RUNNER :=
@@ -47,25 +49,43 @@ else
   TEST_RUNNER := $(TEST_SCRIPT) --no-check
 endif
 
-HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
-EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
-COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(HOST_OS) $(HOST_ARCH))$(BUILD_SUFFIX)
+HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH))_debug
+EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH))$(BUILD_SUFFIX)
+COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH))$(BUILD_SUFFIX)
 
-HOST_COMPILER:=$(HOST_COMPILER_GENDIR)bin/compiler$(EXE_SUFFIX)
-$(info HOST_COMPILER $(HOST_COMPILER))
+HOST_COMPILER:=$(HOST_COMPILER_GENDIR)/bin/compiler$(EXE_SUFFIX)
+
+.PHONY: examples run_examples regenerate regenerate_examples build_compiler native_compiler
+.PHONY: clean_examples mrproper
 
 build_compiler:
-	$(MAKE) $(HOST_MAKE_ARGS) TAGS="$(COMPILER_TAGS)" compiler
+	$(MAKE) $(HOST_MAKE_ARGS) TAGS="$(COMPILER_TAGS)" BUILD_TYPE=debug compiler
 
 regenerate: build_compiler
 	make $(HOST_MAKE_ARGS) regenerate_examples
 
 examples:  regenerate
-	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" build_examples
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" build_compiled_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_compiled_examples
+
+examples_footprint:
+	$(MAKE) -f IFX_Makefile clean_examples
+	$(MAKE) -f IFX_Makefile FOOTPRINT_ONLY=1 BUILD_TYPE=release footprints
+
+footprints: examples
+	set -e ; \
+	for f in $(EXAMPLES); do \
+	  nm --print-size --size-sort --radix=d $(EXAMPLES_GENDIR)/bin/$${f}  \
+	  | cut -f 2- -d ' '> $${f}_sizes.txt; \
+	done
+	set -e ; \
+	for f in $(COMPILED_EXAMPLES); do \
+	  nm --print-size --size-sort --radix=d  $(COMPILED_EXAMPLES_GENDIR)/bin/$${f} \
+	  | cut -f 2- -d ' '> $${f}_sizes.txt; \
+	done
 
 build_examples: $(EXAMPLES)
-
+ 
 build_compiled_examples: $(COMPILED_EXAMPLES)
 
 run_examples:  examples 
@@ -84,6 +104,10 @@ examples/generated/compiled_%.cc: examples/%.tflite $(HOST_COMPILER)
 install: build_compiler
 	mkdir -p "${INSTALLED_TFLITE_MICRO}"/bin
 	cp -a $(HOST_COMPILER) "${INSTALLED_TFLITE_MICRO}"/bin
+
+clean_examples:
+	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) clean
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) clean
 
 mrproper:
 	rm -rf $(GENROOT_DIR) examples/generated/*
