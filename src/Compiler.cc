@@ -11,8 +11,12 @@
 #include "RecordAllocations.h"
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
+#include "tensorflow/lite/c/common.h"
 
-#if TF_LITE_MICRO_RECORD_STATIC_KERNEL_VARIANT
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION != 100
+#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersion 100 supported!"
+#endif
 #include "tensorflow/lite/micro/kernels/pointer_collector.h"
 #endif
 
@@ -26,7 +30,7 @@
 
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION != 100
-#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersino 100 supported!"
+#error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersion 100 supported!"
 #endif
 #endif
 
@@ -615,9 +619,24 @@ TfLiteTensor* )"
       << prefix_ << R"(output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
+)";
+
+
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
+#endif
+
+  out << R"(
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
+)";
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  out << R"(
+  tflite::ops::micro::resetRecordedVariants();
+)";
+#endif
+  out << R"(
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
@@ -630,9 +649,6 @@ TfLiteStatus )"
 
 )";
 
-#if TF_LITE_MICRO_RECORD_STATIC_KERNEL_VARIANT
-  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
-#endif
 }
 
 void tflmc::Compiler::writeHeader(std::ostream &out) {

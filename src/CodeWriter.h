@@ -2,7 +2,7 @@
 #define TFLMCOMPILER_CODEWRITER_H
 
 #include <iostream>
-
+#include "tensorflow/lite/version.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 
 namespace tflmc {
