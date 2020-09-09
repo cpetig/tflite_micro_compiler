@@ -14,7 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
 #include <stdio.h>
+#endif
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "compiled_mobilenet.cc.h"
@@ -23,13 +25,15 @@ extern "C" const unsigned char gnu_ppm[];
 
 int run() {
   TfLiteTensor* model_input = mobilenet_input(0);
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
   memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
-
+#endif
   TfLiteStatus invoke_status = mobilenet_invoke();
   if (invoke_status != kTfLiteOk) {
     fprintf(stderr, "Invoke failed\n");
     return 1;
   }
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
   TfLiteTensor* model_output = mobilenet_output(0);
   int best=0;
   int bestval=model_output->data.uint8[0];
@@ -40,6 +44,7 @@ int run() {
     }
   }
   printf("Best match is %d with %d%%\n", best, bestval * 100/256);
+#endif
   return 0;
 }
 

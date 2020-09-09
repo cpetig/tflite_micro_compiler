@@ -1,5 +1,7 @@
 
+#ifndef TF_LITE_MICRO_FOOTPRINT_ONLY
 #include <stdio.h>  // for check output
+#endif
 
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -68,13 +70,15 @@ void exit(void) {
 }
 
 void run() {
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
   TfLiteTensor* model_input = interpreter->input(0);
   memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
-
+#endif
   TfLiteStatus invoke_status = interpreter->Invoke();
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
   }
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
   TfLiteTensor* model_output = interpreter->output(0);
   int best=0;
   int bestval=model_output->data.uint8[0];
@@ -85,6 +89,7 @@ void run() {
     }
   }
   printf("Best match is %d with %d%%\n", best, (bestval * 100 / 255));
+#endif
 }
 
 int main(int argc, char** argv) {
