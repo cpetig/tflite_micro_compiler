@@ -30,7 +30,9 @@ int run() {
 #endif
   TfLiteStatus invoke_status = mobilenet_invoke();
   if (invoke_status != kTfLiteOk) {
+#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
     fprintf(stderr, "Invoke failed\n");
+#endif
     return 1;
   }
 #ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
