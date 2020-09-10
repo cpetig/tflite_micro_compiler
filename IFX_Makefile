@@ -103,7 +103,7 @@ examples/generated/compiled_%.cc: examples/%.tflite $(HOST_COMPILER)
 
 install: build_compiler
 	mkdir -p "$(INSTALLED_TFLITE_MICRO)"/bin
-	cp -a $(HOST_COMPILER) "$(INSTALLED_TFLITE_MICRO)"/bin
+	cp -a $(HOST_COMPILER) "$(INSTALLED_TFLITE_MICRO)"/bin/tfl_u_compiler$(EXE_SUFFIX)
 
 clean_examples:
 	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) clean
