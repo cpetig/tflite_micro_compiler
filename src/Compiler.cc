@@ -20,7 +20,7 @@
 #include "tensorflow/lite/micro/kernels/pointer_collector.h"
 #endif
 
-#ifndef SUFFICIENT_ARENA_SIZE 
+#ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
 #endif
 
@@ -39,8 +39,8 @@ bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &prefix) {
   // Load model flatbuffer.
   std::ifstream model_file(modelFileName, std::ios::binary | std::ios::ate);
-  if( ! model_file ) {
-      std::cerr << "Couod nto open " << modelFileName  << " for read\n";
+  if (!model_file) {
+    std::cerr << "Could not open " << modelFileName << " for read\n";
     return false;
   }
   auto sz = model_file.tellg();
@@ -396,15 +396,13 @@ TfLiteNode tflNodes[)"
         wr << ", {kTfLiteSub8BitPackedUniformDetail, "
               "{&quant_details" << i << "}}";
       } else {
-          wr << ", {kTfLiteNoDetails, {}}";
+        wr << ", {kTfLiteNoDetails, {}}";
       }
 #endif
       wr << "},";
-
     }
     if (common_tensor_is_variable.None) {
-      wr << std::to_string(t->is_variable)
-         << ", ";  // TODO: is there a bool to string?
+      wr << t->is_variable << ", ";
     }
     wr << "},\n";
   }
@@ -483,7 +481,6 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *ignore,
   return &evalTensors[tensor_idx];
 }
 
-  // TODO: This code assumes that persistent 
 
 static TfLiteStatus RequestScratchBufferInArena(TfLiteContext *ignored,
                                                 size_t bytes_ignored,
