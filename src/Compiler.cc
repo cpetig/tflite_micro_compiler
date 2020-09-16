@@ -17,7 +17,7 @@
 #if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION != 100
 #error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Vwersion 100 supported!"
 #endif
-#include "tensorflow/lite/micro/kernels/pointer_collector.h"
+#include "tensorflow/lite/micro/kernels/static_init_support.h"
 #endif
 
 #ifndef SUFFICIENT_ARENA_SIZE
@@ -263,6 +263,12 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #endif
 
 )";
+
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  tflite::ops::micro::writeStaticOpDataHeaders(out);
+#endif
+
+
   // declare custom registrations
   if (has_custom_ops) {
     wr << R"(namespace tflite {
@@ -503,8 +509,10 @@ wr << R"(
 } // namespace
 )";
 
-
-
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
+  tflite::ops::micro::writeStaticOpDataDefinitions(out);
+#endif
 wr << R"(TfLiteStatus )"
      << prefix_ << R"(init() {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
@@ -565,6 +573,11 @@ wr << R"(TfLiteStatus )"
        << opName << "();\n";
   }
   wr << "\n";
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  out << R"(
+  tflite::ops::micro::resetStaticDataCounters();
+)";
+#endif
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
     tflNodes[i].inputs = nodeData[i].inputs;
     tflNodes[i].outputs = nodeData[i].outputs;
@@ -582,6 +595,11 @@ wr << R"(TfLiteStatus )"
     }
   }
 )";
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  out << R"(
+  tflite::ops::micro::resetStaticDataCounters();
+)";
+#endif
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
     if (registrations[nodeData[i].used_op_index].prepare) {
       TfLiteStatus status = registrations[nodeData[i].used_op_index].prepare(&ctx, &tflNodes[i]);
@@ -619,10 +637,6 @@ TfLiteTensor* )"
 )";
 
 
-#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
-#endif
-
   out << R"(
 
 TfLiteStatus )"
@@ -630,7 +644,7 @@ TfLiteStatus )"
 )";
 #if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
   out << R"(
-  tflite::ops::micro::resetRecordedVariants();
+  tflite::ops::micro::resetStaticDataCounters();
 )";
 #endif
   out << R"(
