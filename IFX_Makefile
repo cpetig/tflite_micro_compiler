@@ -7,16 +7,20 @@ COMPILED_FILES_SELECTION ?= generated
 LOCAL_CPPFLAGS := -DTFLMC_USE_INTERPRETER_HOOKS
 
 # The actual tflite(u) Makefile!!
+
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
 
 
 HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
 LOCAL_CLEANS = examples/generated
 
+
+$(info TARGET $(TARGET))
 ifeq ($(OS),Windows_NT)
     EXE_SUFFIX=.exe
-else
-    LOCAL_LDFLAGS=-ldl
+endif
+ifeq ($(TARGET),linux)
+	LOCAL_LDFLAGS=-ldl
 endif
 
 
@@ -26,7 +30,7 @@ EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
 COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 
 BASE_TAGS := portable_optimized
-COMPILER_TAGS := $(BASE_TAGS)
+COMPILER_TAGS := $(BASE_TAGS) record_model
 EXAMPLES_TAGS := $(BASE_TAGS)
 COMPILED_EXAMPLES_TAGS := $(BASE_TAGS)
 
@@ -48,6 +52,8 @@ else ifeq ($(TARGET),linux)
 else
   TEST_RUNNER := $(TEST_SCRIPT) --no-check
 endif
+
+$(info LDFLAGS $(LDFLAGS))
 
 HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH))_debug
 EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH))$(BUILD_SUFFIX)
@@ -83,6 +89,7 @@ footprints: examples
 	  nm --print-size --size-sort --radix=d  $(COMPILED_EXAMPLES_GENDIR)/bin/$${f} \
 	  | cut -f 2- -d ' '> $${f}_sizes.txt; \
 	done
+	size $(EXAMPLES_GENDIR)/bin/* $(COMPILED_EXAMPLES_GENDIR)/bin/*
 
 build_examples: $(EXAMPLES)
  
