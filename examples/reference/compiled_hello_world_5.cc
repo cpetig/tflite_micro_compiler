@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 09.09.2020 16:20:04
+// Generated on: 17.09.2020 12:56:32
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -178,7 +178,6 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *ignore,
   return &evalTensors[tensor_idx];
 }
 
-  // TODO: This code assumes that persistent 
 
 static TfLiteStatus RequestScratchBufferInArena(TfLiteContext *ignored,
                                                 size_t bytes_ignored,
@@ -254,17 +253,6 @@ static const int outTensorIndices[] = {
 TfLiteTensor* hello_world_5_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
-
-TfLiteStatus hello_world_5_invoke() {
-  for(size_t i = 0; i < 3; ++i) {
-    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
-    if (status != kTfLiteOk) {
-      return status;
-    }
-  }
-  return kTfLiteOk;
-}
-
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -293,11 +281,59 @@ typedef TfLiteStatus (*RecordedVariantFPtr)(    TfLiteConvParams* params, OpData
 RecordedVariantFPtr recordedVariant() { return nullptr; }
 } // namespace conv
 
-void resetRecordedVariants() { 
-  depthwise_conv::invoke_counter = 0;
-  conv::invoke_counter = 0;
-}
+namespace pooling {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(    const TfLiteContext* context, const TfLiteNode* node,
+    const TfLitePoolParams* params, const OpData* data, 
+    const TfLiteEvalTensor* input, TfLiteEvalTensor* output);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace pooling
+
+namespace fully_connected {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(   TfLiteContext* context, TfLiteFullyConnectedParams* params,
+   OpData* opData, const TfLiteTensor* input, const TfLiteTensor* weights,
+   const TfLiteTensor* bias, TfLiteTensor* output);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace fully_connected
+
+namespace reduce {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(    TfLiteContext* context,
+    OpData* op_data, TfLiteReducerParams* params,
+    const TfLiteEvalTensor* input, const TfLiteEvalTensor* axis,
+    TfLiteEvalTensor* output
+);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace reduce
 
 } // namespace micro
 } // namespace ops
 } // namespace tflite
+
+
+TfLiteStatus hello_world_5_invoke() {
+
+  tflite::ops::micro::resetRecordedVariants();
+
+  for(size_t i = 0; i < 3; ++i) {
+    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
+    if (status != kTfLiteOk) {
+      return status;
+    }
+  }
+  return kTfLiteOk;
+}
+

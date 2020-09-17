@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 09.09.2020 15:51:53
+// Generated on: 17.09.2020 12:56:32
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kTensorArenaSize = 257224;
+constexpr int kTensorArenaSize = 257240;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
@@ -3682,7 +3682,6 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *ignore,
   return &evalTensors[tensor_idx];
 }
 
-  // TODO: This code assumes that persistent 
 
 static TfLiteStatus RequestScratchBufferInArena(TfLiteContext *ignored,
                                                 size_t bytes_ignored,
@@ -3762,17 +3761,6 @@ static const int outTensorIndices[] = {
 TfLiteTensor* mobilenet_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
-
-TfLiteStatus mobilenet_invoke() {
-  for(size_t i = 0; i < 31; ++i) {
-    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
-    if (status != kTfLiteOk) {
-      return status;
-    }
-  }
-  return kTfLiteOk;
-}
-
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -3811,45 +3799,62 @@ size_t invoke_counter = 0;
 typedef TfLiteStatus (*RecordedVariantFPtr)(    TfLiteConvParams* params, OpData* data,
     const TfLiteEvalTensor* input, const TfLiteEvalTensor* filter, 
     const TfLiteEvalTensor* bias, TfLiteEvalTensor* output, TfLiteContext* context);
-TfLiteStatus EvalConvUInt8(
-    TfLiteConvParams* params, OpData* data,
-    const TfLiteEvalTensor* input, const TfLiteEvalTensor* filter, 
-    const TfLiteEvalTensor* bias, TfLiteEvalTensor* output, TfLiteContext* context);
-TfLiteStatus EvalConvUInt8Padding(
-    TfLiteConvParams* params, OpData* data,
-    const TfLiteEvalTensor* input, const TfLiteEvalTensor* filter, 
-    const TfLiteEvalTensor* bias, TfLiteEvalTensor* output, TfLiteContext* context);
-
-RecordedVariantFPtr eval_functions[15] = {
-  EvalConvUInt8Padding,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-  EvalConvUInt8,
-};
-RecordedVariantFPtr recordedVariant() {
-  auto fptr = eval_functions[invoke_counter];
-  invoke_counter = (invoke_counter + 1) % (sizeof(eval_functions)/sizeof(eval_functions[0]));
-  return fptr;
-}
-
+RecordedVariantFPtr recordedVariant() { return nullptr; }
 } // namespace conv
 
-void resetRecordedVariants() { 
-  depthwise_conv::invoke_counter = 0;
-  conv::invoke_counter = 0;
-}
+namespace pooling {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(    const TfLiteContext* context, const TfLiteNode* node,
+    const TfLitePoolParams* params, const OpData* data, 
+    const TfLiteEvalTensor* input, TfLiteEvalTensor* output);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace pooling
+
+namespace fully_connected {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(   TfLiteContext* context, TfLiteFullyConnectedParams* params,
+   OpData* opData, const TfLiteTensor* input, const TfLiteTensor* weights,
+   const TfLiteTensor* bias, TfLiteTensor* output);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace fully_connected
+
+namespace reduce {
+
+struct OpData;
+
+size_t invoke_counter = 0;
+
+typedef TfLiteStatus (*RecordedVariantFPtr)(    TfLiteContext* context,
+    OpData* op_data, TfLiteReducerParams* params,
+    const TfLiteEvalTensor* input, const TfLiteEvalTensor* axis,
+    TfLiteEvalTensor* output
+);
+RecordedVariantFPtr recordedVariant() { return nullptr; }
+} // namespace reduce
 
 } // namespace micro
 } // namespace ops
 } // namespace tflite
+
+
+TfLiteStatus mobilenet_invoke() {
+
+  tflite::ops::micro::resetRecordedVariants();
+
+  for(size_t i = 0; i < 31; ++i) {
+    TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
+    if (status != kTfLiteOk) {
+      return status;
+    }
+  }
+  return kTfLiteOk;
+}
+
