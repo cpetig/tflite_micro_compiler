@@ -21,7 +21,7 @@ IF(NOT GET_TF_SRC)
             ${TFLMD_SRC}/ruy
         )
         IF(WIN32)
-            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib/tensorflow-microlite.lib)
+            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib/libtensorflow-microlite.a)
         ELSE()
             SET(TF_LIB ${TFLM_SRC}/tools/make/gen/linux_x86_64/lib/libtensorflow-microlite.a)
         ENDIF()
