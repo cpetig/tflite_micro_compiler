@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 21.09.2020 11:16:54
+// Generated on: 21.09.2020 21:37:57
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -14,7 +14,7 @@
 #endif
 
 #include "tensorflow/lite/micro/kernels/portable_optimized/conv_op_data.h"
-
+#include "tensorflow/lite/micro/kernels/portable_optimized/depthwise_conv_op_data.h"
 #include "tensorflow/lite/micro/kernels/portable_optimized/fully_connected_op_data.h"
 #include "tensorflow/lite/micro/kernels/portable_optimized/pooling_op_data.h"
 
@@ -769,8 +769,8 @@ struct OpData;
 size_t invoke_counter = 0;
 
 typedef TfLiteStatus (*RecordedVariantFPtr)(    TfLiteContext* context, const TfLiteDepthwiseConvParams& params,
-    const OpData* data, const TfLiteTensor* input, const TfLiteTensor* filter, 
-    const TfLiteTensor* bias, TfLiteTensor* output);
+    OpData* data, const TfLiteEvalTensor* input, const TfLiteEvalTensor* filter, 
+    const TfLiteEvalTensor* bias, TfLiteEvalTensor* output);
 RecordedVariantFPtr recordedVariant() { return nullptr; }
 } // namespace depthwise_conv
 
