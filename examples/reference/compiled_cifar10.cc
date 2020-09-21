@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 17.09.2020 12:56:31
+// Generated on: 21.09.2020 11:16:54
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -12,6 +12,11 @@
 #elif defined __TASKING__
 #define ALIGN(X) __align(X)
 #endif
+
+#include "tensorflow/lite/micro/kernels/portable_optimized/conv_op_data.h"
+
+#include "tensorflow/lite/micro/kernels/portable_optimized/fully_connected_op_data.h"
+#include "tensorflow/lite/micro/kernels/portable_optimized/pooling_op_data.h"
 
 namespace {
 
@@ -753,64 +758,6 @@ static void* GetScratchBuffer(struct TfLiteContext *ignore, int buffer_idx) {
 }
 
 } // namespace
-TfLiteStatus cifar10_init() {
-  ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
-  ctx.RequestScratchBufferInArena = RequestScratchBufferInArena;
-  ctx.GetScratchBuffer = &GetScratchBuffer;
-  ctx.GetEvalTensor = &GetEvalTensor;
-  ctx.tensors = tflTensors;
-  ctx.tensors_size = 20;
-  for(size_t i = 0; i < 20; ++i) {
-    tflTensors[i].data.data = tensorData[i].data;
-    evalTensors[i].data.data = tensorData[i].data;
-    tflTensors[i].type = tensorData[i].type;
-    evalTensors[i].type = tensorData[i].type;
-    tflTensors[i].is_variable = 0;
-    tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
-    tflTensors[i].bytes = tensorData[i].bytes;
-    tflTensors[i].dims = tensorData[i].dims;
-    evalTensors[i].dims = tensorData[i].dims;
-    tflTensors[i].quantization.type = kTfLiteNoQuantization;
-  }
-  registrations[OP_CONV_2D] = tflite::ops::micro::Register_CONV_2D();
-  registrations[OP_MAX_POOL_2D] = tflite::ops::micro::Register_MAX_POOL_2D();
-  registrations[OP_RESHAPE] = tflite::ops::micro::Register_RESHAPE();
-  registrations[OP_FULLY_CONNECTED] = tflite::ops::micro::Register_FULLY_CONNECTED();
-
-  for(size_t i = 0; i < 8; ++i) {
-    tflNodes[i].inputs = nodeData[i].inputs;
-    tflNodes[i].outputs = nodeData[i].outputs;
-    tflNodes[i].builtin_data = nodeData[i].builtin_data;
-    tflNodes[i].custom_initial_data = nullptr;
-    tflNodes[i].custom_initial_data_size = 0;
-    if (registrations[nodeData[i].used_op_index].init) {
-      tflNodes[i].user_data = registrations[nodeData[i].used_op_index].init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
-    }
-  }
-  for(size_t i = 0; i < 8; ++i) {
-    if (registrations[nodeData[i].used_op_index].prepare) {
-      TfLiteStatus status = registrations[nodeData[i].used_op_index].prepare(&ctx, &tflNodes[i]);
-      if (status != kTfLiteOk) {
-        return status;
-      }
-    }
-  }
-  return kTfLiteOk;
-}
-
-static const int inTensorIndices[] = {
-  0, 
-};
-TfLiteTensor* cifar10_input(int index) {
-  return &ctx.tensors[inTensorIndices[index]];
-}
-
-static const int outTensorIndices[] = {
-  19, 
-};
-TfLiteTensor* cifar10_output(int index) {
-  return &ctx.tensors[outTensorIndices[index]];
-}
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -880,11 +827,161 @@ RecordedVariantFPtr recordedVariant() { return nullptr; }
 } // namespace micro
 } // namespace ops
 } // namespace tflite
+namespace tflite {
+namespace ops {
+namespace micro {
+
+namespace conv {
+
+constexpr int32_t *op_user_data0_sum_of_filters_factor = nullptr;
+constexpr int32_t *op_user_data0_per_channel_output_shift = nullptr;
+constexpr int32_t *op_user_data0_per_channel_output_multiplier = nullptr;
+constexpr int32_t *op_user_data1_sum_of_filters_factor = nullptr;
+constexpr int32_t *op_user_data1_per_channel_output_shift = nullptr;
+constexpr int32_t *op_user_data1_per_channel_output_multiplier = nullptr;
+constexpr int32_t *op_user_data2_sum_of_filters_factor = nullptr;
+constexpr int32_t *op_user_data2_per_channel_output_shift = nullptr;
+constexpr int32_t *op_user_data2_per_channel_output_multiplier = nullptr;
+OpData op_user_data[] = {
+  {{0, 0, 0, 0}, 0, 0, 0, 0, 0, op_user_data0_per_channel_output_multiplier, op_user_data0_per_channel_output_shift, 0, 0, op_user_data0_sum_of_filters_factor, nullptr, EvalConvFloat}, 
+  {{0, 0, 0, 0}, 0, 0, 0, 0, 0, op_user_data1_per_channel_output_multiplier, op_user_data1_per_channel_output_shift, 0, 0, op_user_data1_sum_of_filters_factor, nullptr, EvalConvFloat}, 
+  {{0, 0, 0, 0}, 0, 0, 0, 0, 0, op_user_data2_per_channel_output_multiplier, op_user_data2_per_channel_output_shift, 0, 0, op_user_data2_sum_of_filters_factor, nullptr, EvalConvFloat}
+};
+  size_t inst_counter = 0;
+
+OpData *recordedStaticOpData() {
+  return &op_user_data[inst_counter++];
+}
+
+} // namespace conv
+
+namespace depthwise_conv {
+
+OpData *recordedStaticOpData() {
+  return nullptr;
+}
+
+} // namespace depthwise_conv
+
+namespace fully_connected {
+
+constexpr int32_t *op_user_data0_sum_of_weights_factor = nullptr;
+constexpr int32_t *op_user_data1_sum_of_weights_factor = nullptr;
+OpData op_user_data[] = {
+  {0, 0, 0, 0, 0, op_user_data0_sum_of_weights_factor, EvalFloat}, 
+  {0, 0, 0, 0, 0, op_user_data1_sum_of_weights_factor, EvalFloat}
+};
+  size_t inst_counter = 0;
+
+OpData *recordedStaticOpData() {
+  return &op_user_data[inst_counter++];
+}
+
+} // namespace fully_connected
+
+namespace pooling {
+
+OpData op_user_data[] = {
+  {{0, 0, 0, 0}, 0, 0, -340282346638528859811704183484516925440.000000, 340282346638528859811704183484516925440.000000, MaxEvalFloat}, 
+  {{0, 0, 0, 0}, 0, 0, -340282346638528859811704183484516925440.000000, 340282346638528859811704183484516925440.000000, MaxEvalFloat}
+};
+  size_t inst_counter = 0;
+
+OpData *recordedStaticOpData() {
+  return &op_user_data[inst_counter++];
+}
+
+} // namespace pooling
+
+namespace reduce {
+
+OpData *recordedStaticOpData() {
+  return nullptr;
+}
+
+} // namespace reduce
+
+void resetStaticDataCounters() { 
+  depthwise_conv::invoke_counter = 0;
+  conv::invoke_counter = 0;
+  pooling::invoke_counter = 0;
+  fully_connected::invoke_counter = 0;
+  reduce::invoke_counter = 0;
+  conv::inst_counter = 0;
+  fully_connected::inst_counter = 0;
+  pooling::inst_counter = 0;
+}
+
+} // namespace micro
+} // namespace ops
+} // namespace tflite
+TfLiteStatus cifar10_init() {
+  ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
+  ctx.RequestScratchBufferInArena = RequestScratchBufferInArena;
+  ctx.GetScratchBuffer = &GetScratchBuffer;
+  ctx.GetEvalTensor = &GetEvalTensor;
+  ctx.tensors = tflTensors;
+  ctx.tensors_size = 20;
+  for(size_t i = 0; i < 20; ++i) {
+    tflTensors[i].data.data = tensorData[i].data;
+    evalTensors[i].data.data = tensorData[i].data;
+    tflTensors[i].type = tensorData[i].type;
+    evalTensors[i].type = tensorData[i].type;
+    tflTensors[i].is_variable = 0;
+    tflTensors[i].allocation_type = (tensor_arena <= tensorData[i].data && tensorData[i].data < tensor_arena + kTensorArenaSize) ? kTfLiteArenaRw : kTfLiteMmapRo;
+    tflTensors[i].bytes = tensorData[i].bytes;
+    tflTensors[i].dims = tensorData[i].dims;
+    evalTensors[i].dims = tensorData[i].dims;
+    tflTensors[i].quantization.type = kTfLiteNoQuantization;
+  }
+  registrations[OP_CONV_2D] = tflite::ops::micro::Register_CONV_2D();
+  registrations[OP_MAX_POOL_2D] = tflite::ops::micro::Register_MAX_POOL_2D();
+  registrations[OP_RESHAPE] = tflite::ops::micro::Register_RESHAPE();
+  registrations[OP_FULLY_CONNECTED] = tflite::ops::micro::Register_FULLY_CONNECTED();
+
+
+  tflite::ops::micro::resetStaticDataCounters();
+  for(size_t i = 0; i < 8; ++i) {
+    tflNodes[i].inputs = nodeData[i].inputs;
+    tflNodes[i].outputs = nodeData[i].outputs;
+    tflNodes[i].builtin_data = nodeData[i].builtin_data;
+    tflNodes[i].custom_initial_data = nullptr;
+    tflNodes[i].custom_initial_data_size = 0;
+    if (registrations[nodeData[i].used_op_index].init) {
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index].init(&ctx, (const char*)tflNodes[i].builtin_data, 0);
+    }
+  }
+
+  tflite::ops::micro::resetStaticDataCounters();
+  for(size_t i = 0; i < 8; ++i) {
+    if (registrations[nodeData[i].used_op_index].prepare) {
+      TfLiteStatus status = registrations[nodeData[i].used_op_index].prepare(&ctx, &tflNodes[i]);
+      if (status != kTfLiteOk) {
+        return status;
+      }
+    }
+  }
+  return kTfLiteOk;
+}
+
+static const int inTensorIndices[] = {
+  0, 
+};
+TfLiteTensor* cifar10_input(int index) {
+  return &ctx.tensors[inTensorIndices[index]];
+}
+
+static const int outTensorIndices[] = {
+  19, 
+};
+TfLiteTensor* cifar10_output(int index) {
+  return &ctx.tensors[outTensorIndices[index]];
+}
 
 
 TfLiteStatus cifar10_invoke() {
 
-  tflite::ops::micro::resetRecordedVariants();
+  tflite::ops::micro::resetStaticDataCounters();
 
   for(size_t i = 0; i < 8; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
