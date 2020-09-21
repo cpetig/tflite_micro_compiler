@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/version.h"
 
 namespace tflmc {
 
