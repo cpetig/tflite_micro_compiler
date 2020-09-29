@@ -24,8 +24,8 @@ limitations under the License.
 extern "C" const unsigned char gnu_ppm[];
 
 int run() {
-  TfLiteTensor* model_input = mobilenet_input(0);
 #ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
+  TfLiteTensor* model_input = mobilenet_input(0);
   memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
 #endif
   TfLiteStatus invoke_status = mobilenet_invoke();
