@@ -2,6 +2,7 @@
 set -e
 source ../SETTINGS_AND_VERSIONS.sh
 
+TFLITE_MICRO_ROOT=${TOOLSPREFIX}/tflite_u-${TFLITE_MICRO_VERSION}
 
 while [[ "$1" != "" && "$1" != "--" ]]
 do
