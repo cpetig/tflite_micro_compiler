@@ -1,5 +1,5 @@
 // This file is generated. Do not edit.
-// Generated on: 21.09.2020 21:37:58
+// Generated on: 30.10.2020 09:23:54
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -17,7 +17,7 @@
 #include "tensorflow/lite/micro/kernels/portable_optimized/depthwise_conv_op_data.h"
 #include "tensorflow/lite/micro/kernels/portable_optimized/fully_connected_op_data.h"
 #include "tensorflow/lite/micro/kernels/portable_optimized/pooling_op_data.h"
-
+#include "tensorflow/lite/micro/kernels/portable_optimized/reduce_op_data.h"
 namespace {
 
 constexpr int kTensorArenaSize = 312;
@@ -296,12 +296,12 @@ int32_t op_user_data1_sum_of_weights_factor[] = {
 5922, 1965, -549, 35, 1767, 1913, -5848, 0, -4678, 0, 1900, 1877, -952, 1905, 0, -6193, 
 };
 int32_t op_user_data2_sum_of_weights_factor[] = {
-0, 
+237, 
 };
 OpData op_user_data[] = {
   {1307038386, 6, 0, 255, 0, op_user_data0_sum_of_weights_factor, EvalQuantizedUInt8}, 
   {1400793410, 7, 0, 255, 0, op_user_data1_sum_of_weights_factor, EvalQuantizedUInt8}, 
-  {1920999296, 4, 0, 255, 0, op_user_data2_sum_of_weights_factor, EvalQuantizedPacked}
+  {1920999296, 4, 0, 255, 0, op_user_data2_sum_of_weights_factor, (PackedFullyConnected<uint16_t, 5, 16 / 5>::EvalUint8PackedWeights)}
 };
   size_t inst_counter = 0;
 
