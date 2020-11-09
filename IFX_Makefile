@@ -72,6 +72,26 @@ examples:  regenerate
 	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_examples
 	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_compiled_examples
 
+examples_fpga: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS)" BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY hello_world_compiled # build_compiled_examples
+	
+examples_fpga_mac_nostream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY hello_world_compiled # build_compiled_examples
+
+examples_fpga_mac_stream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY hello_world_compiled # build_compiled_examples
+	
+examples_fpga_mac_emustream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY hello_world_compiled # build_compiled_examples
+
 examples_footprint:
 	$(MAKE) -f IFX_Makefile clean_examples
 	$(MAKE) -f IFX_Makefile FOOTPRINT_ONLY=1 BUILD_TYPE=release footprints
