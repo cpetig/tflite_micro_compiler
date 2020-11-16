@@ -82,7 +82,7 @@ providing the argument `TF_DIR`.
 e.g.
 
 ``` bash
-cmake -DTF_DIR=../../my_tf_source ..
+cmake -DTF_DIR=../my_tensorflow ..
 ```
 
 ## Additional Targets
