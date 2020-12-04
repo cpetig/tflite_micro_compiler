@@ -1,0 +1,208 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "make (generic)",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-j", "4",
+                // "TARGET_ARCH=i386",
+                "BUILD_TYPE=debug",
+                "compiler"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+        {
+            "label": "make (IFX) compiler",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",
+                "-j", "4",
+                "BUILD_TYPE=debug",
+                "build_compiler"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+        
+        {
+            "label": "make (IFX) debug examples",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",
+                "-j", "6",
+                "BUILD_TYPE=debug",
+                "examples"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+
+        {
+            "label": "make (IFX) release examples",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",
+                "-j", "6",
+                "BUILD_TYPE=release",
+                "examples"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+
+        
+        {
+            "label": "make (IFX) RISCV release examples",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",
+                "-j", "6",
+                "TARGET=ifx_riscv32_mcu",
+                "BUILD_TYPE=release",
+                "examples"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+
+
+        {
+            "label": "make (IFX) example sources",
+            "type": "shell",
+            "command": "make",
+            // use options.cwd property if the Makefile is not in the project root ${workspaceRoot} dir
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            // start the build without prompting for task selection, use "group": "build" otherwise
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            // arg passing example: in this case is executed make QUIET=0
+            "args": [
+                "-f", "IFX_Makefile",  
+                "-j", "6",
+                "TARGET=ifx_riscv32_mcu",
+                "BUILD_TYPE=release",
+                "regenerate"
+            ],
+            // Use the standard less compilation problem matcher.
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": [ "relative", "${workspaceRoot}" ]
+            }
+        },
+
+    ]
+}
