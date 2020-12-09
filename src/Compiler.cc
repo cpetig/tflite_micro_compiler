@@ -34,6 +34,18 @@
 #endif
 #endif
 
+static std::vector<int> flat_namespaced_ops(
+  {
+    tflite::BuiltinOperator_CONV_2D,
+    tflite::BuiltinOperator_DEPTHWISE_CONV_2D,
+    tflite::BuiltinOperator_FULLY_CONNECTED,
+    tflite::BuiltinOperator_QUANTIZE,
+    tflite::BuiltinOperator_SHAPE,
+    tflite::BuiltinOperator_SOFTMAX,
+    tflite::BuiltinOperator_SVDF
+  }
+);
+
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
                         const std::string &prefix) {
@@ -564,12 +576,20 @@ wr << R"(TfLiteStatus )"
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
     std::string opName;
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+    auto code = registrations_[i].code;
+    if (code == tflite::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
     } else {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      opName = tflite::EnumNameBuiltinOperator(code);
     }
-    wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
+    const char *op_register_fn_namspaces;
+    if (std::find(flat_namespaced_ops.begin(), flat_namespaced_ops.end(), code) != flat_namespaced_ops.end()) {
+      op_register_fn_namspaces = "tflite::";
+    } else {
+      op_register_fn_namspaces = "tflite::ops::micro::";
+    }
+    wr << "  registrations[OP_" << opName << "] = " 
+       << op_register_fn_namspaces << "Register_"
        << opName << "();\n";
   }
   wr << "\n";
