@@ -19,8 +19,9 @@ limitations under the License.
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "compiled_hello_world_5.cc.h"
+
 #ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
-#include "tensorflow/lite/micro/testing/test_utils.h"
+#include "tensorflow/lite/micro/testing/quantization_utils.h"
 #endif
 
 void test_compiled(void) {

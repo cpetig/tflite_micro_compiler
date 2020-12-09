@@ -9,7 +9,7 @@
 #include "tensorflow/lite/version.h"
 
 #ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
-#include "tensorflow/lite/micro/testing/test_utils.h"
+#include "tensorflow/lite/micro/testing/quantization_utils.h"
 #endif
 
 // Create an area of memory to use for input, output, and intermediate arrays.

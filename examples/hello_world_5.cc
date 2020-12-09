@@ -8,9 +8,7 @@
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
-#ifndef  TF_LITE_MICRO_FOOTPRINT_ONLY
-#include "tensorflow/lite/micro/testing/test_utils.h"
-#endif
+
 
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be

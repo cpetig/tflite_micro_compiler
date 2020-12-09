@@ -17,7 +17,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 
 #include "compiled_hello_world.cc.h"
-#include "tensorflow/lite/micro/testing/test_utils.h"
+#include "tensorflow/lite/micro/testing/quantization_utils.h"
 
 
 int test_compiled(void) {
