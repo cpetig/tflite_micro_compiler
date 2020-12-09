@@ -934,10 +934,10 @@ TfLiteStatus cifar10_init() {
     evalTensors[i].dims = tensorData[i].dims;
     tflTensors[i].quantization.type = kTfLiteNoQuantization;
   }
-  registrations[OP_CONV_2D] = tflite::ops::micro::Register_CONV_2D();
+  registrations[OP_CONV_2D] = tflite::Register_CONV_2D();
   registrations[OP_MAX_POOL_2D] = tflite::ops::micro::Register_MAX_POOL_2D();
   registrations[OP_RESHAPE] = tflite::ops::micro::Register_RESHAPE();
-  registrations[OP_FULLY_CONNECTED] = tflite::ops::micro::Register_FULLY_CONNECTED();
+  registrations[OP_FULLY_CONNECTED] = tflite::Register_FULLY_CONNECTED();
 
 
   tflite::ops::micro::resetStaticDataCounters();

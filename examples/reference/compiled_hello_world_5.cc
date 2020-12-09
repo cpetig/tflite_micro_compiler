@@ -363,7 +363,7 @@ TfLiteStatus hello_world_5_init() {
       tflTensors[i].params.zero_point = quant->zero_point->data[0];
     }
   }
-  registrations[OP_FULLY_CONNECTED] = tflite::ops::micro::Register_FULLY_CONNECTED();
+  registrations[OP_FULLY_CONNECTED] = tflite::Register_FULLY_CONNECTED();
 
 
   tflite::ops::micro::resetStaticDataCounters();

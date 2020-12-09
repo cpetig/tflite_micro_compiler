@@ -4185,11 +4185,11 @@ TfLiteStatus mobilenet_init() {
       tflTensors[i].params.zero_point = quant->zero_point->data[0];
     }
   }
-  registrations[OP_CONV_2D] = tflite::ops::micro::Register_CONV_2D();
-  registrations[OP_DEPTHWISE_CONV_2D] = tflite::ops::micro::Register_DEPTHWISE_CONV_2D();
+  registrations[OP_CONV_2D] = tflite::Register_CONV_2D();
+  registrations[OP_DEPTHWISE_CONV_2D] = tflite::Register_DEPTHWISE_CONV_2D();
   registrations[OP_AVERAGE_POOL_2D] = tflite::ops::micro::Register_AVERAGE_POOL_2D();
   registrations[OP_RESHAPE] = tflite::ops::micro::Register_RESHAPE();
-  registrations[OP_SOFTMAX] = tflite::ops::micro::Register_SOFTMAX();
+  registrations[OP_SOFTMAX] = tflite::Register_SOFTMAX();
 
 
   tflite::ops::micro::resetStaticDataCounters();
