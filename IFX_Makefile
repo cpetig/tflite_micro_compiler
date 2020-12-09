@@ -1,5 +1,6 @@
 
 $(foreach setting, $(shell ../GET_PROJECT_SETTINGS.sh --makefile --id_prefix IFX_), $(eval $(setting)))
+
 INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 
 COMPILED_FILES_SELECTION ?= generated
@@ -24,7 +25,7 @@ endif
 
 
 COMPILER_EXE := $(GENDIR)bin/compiler$(EXE_SUFFIX)
-EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5
+EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5 hello_world_pruned_8
 EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
 COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 
@@ -71,6 +72,26 @@ regenerate: build_compiler
 examples:  regenerate
 	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_examples
 	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_compiled_examples
+
+examples_fpga: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS)" BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	
+examples_fpga_mac_nostream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+
+examples_fpga_mac_stream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	
+examples_fpga_mac_emustream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
 
 examples_footprint:
 	$(MAKE) -f IFX_Makefile clean_examples

@@ -26,6 +26,13 @@ HELLO_WORLD_5_COMPILED_SRC := \
   examples/hello_world2_5.cc  $(COMPILED_FILES_DIR)/compiled_hello_world_5.cc
 HELLO_WORLD_5_COMPILED_HDRS :=
 
+HELLO_WORLD_SPARSE_SRC := \
+  examples/hello_world_sparse.cc examples/hello_world_pruned_8.cc
+HELLO_WORLD_SPARSE_HDRS :=
+
+HELLO_WORLD_SPARSE_COMPILED_SRC := \
+  examples/hello_world2_sparse.cc  $(COMPILED_FILES_DIR)/compiled_hello_world_pruned_8.cc
+HELLO_WORLD_SPARSE_COMPILED_HDRS :=
 
 CIFAR10_SRC := \
   examples/cifar10.cc examples/cifar10_model.cc examples/truck.c
@@ -61,3 +68,10 @@ $(eval $(call microlite_test,hello_world_5,\
 
 $(eval $(call microlite_test,hello_world_5_compiled,\
   $(HELLO_WORLD_5_COMPILED_SRC),$(HELLO_WORLD_5_COMPILED_HDRS)))
+
+
+$(eval $(call microlite_test,hello_world_pruned_8,\
+  $(HELLO_WORLD_SPARSE_SRC),$(HELLO_WORLD_SPARSE_HDRS)))
+
+$(eval $(call microlite_test,hello_world_pruned_8_compiled,\
+  $(HELLO_WORLD_SPARSE_COMPILED_SRC),$(HELLO_WORLD_SPARSE)))

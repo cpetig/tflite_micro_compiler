@@ -5,7 +5,10 @@ include ../common.mk
 COMPILED_FILES_SELECTION ?= reference
 CXXFLAGS += -I $(COMPILED_FILES_SELECTION)
 
-EXAMPLES=hello_world mobilenet hello_world_compiled cifar10 cifar10_compiled hello_world_5 hello_world_5_compiled
+EXAMPLES=hello_world hello_world_compiled hello_world_5 hello_world_5_compiled \
+  hello_world_sparse hello_world_sparse_compiled \
+  cifar10 cifar10_compiled  mobilenet mobilenet_compiled
+
 BINARIES= $(foreach e,  $(EXAMPLES), $(e)$(EXE_SUFFIX))
 
 $(info $(BINARIES))
@@ -38,6 +41,12 @@ hello_world_5$(EXE_SUFFIX): hello_world_5.o hello_world_5_model.o
 hello_world_5_compiled$(EXE_SUFFIX): hello_world2_5.o $(COMPILED_FILES_SELECTION)/compiled_hello_world_5.o
 	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
 
+hello_world_sparse$(EXE_SUFFIX): hello_world_sparse.o hello_world_pruned_8.o
+	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
+
+hello_world_sparse_compiled$(EXE_SUFFIX): hello_world2_sparse.o $(COMPILED_FILES_SELECTION)/compiled_hello_world_pruned_8.o
+	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
+
 
 cifar10$(EXE_SUFFIX): cifar10_model.o truck.o cifar10.o
 	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
@@ -49,5 +58,6 @@ regenerate: ../compiler$(EXE_SUFFIX)
 	mkdir -p generated
 	../compiler hello_world.tflite generated/compiled_hello_world.cc hello_world_
 	../compiler hello_world_5.tflite generated/compiled_hello_world_5.cc hello_world_5_
+	../compiler hello_world_5.tflite generated/compiled_hello_world_pruned_8.cc hello_world_pruned_8_
 	../compiler mobilenet.tflite generated/compiled_mobilenet.cc mobilenet_
 	../compiler cifar10.tflite generated/compiled_cifar10.cc cifar10_
