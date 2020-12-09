@@ -24,7 +24,7 @@ endif
 
 
 COMPILER_EXE := $(GENDIR)bin/compiler$(EXE_SUFFIX)
-EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5
+EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5 hello_world_pruned_8
 EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
 COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 

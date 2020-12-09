@@ -1,0 +1,52 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../tensorflow",
+                "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/",
+                "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/gemmlowp",
+                "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include",
+                "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/ruy",
+                "${workspaceFolder}/../tensorflow/tensorflow/lite/micro/tools/make/downloads/kissfft"
+            ],
+            "defines": [
+                "TF_LITE_STATIC_MEMORY",
+                "TFLMC_USE_INTERPRETER_HOOKS",
+                "NDEBUG",
+                "TF_LITE_DISABLE_X86_NEON",
+                "SUFFICIENT_ARENA_SIZE"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "C:/Inicio/tools/64/tflite_u-2.4.0.2"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:/Inicio/tools/64/iniciomsys-18.10.8.0/mingw64/bin/g++.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "gcc-x64",
+            "compilerArgs": [],
+            "browse": {
+                "path": [
+                    "C:/Inicio/tools/64/tflite_u-2.4.0.0",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

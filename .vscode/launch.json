@@ -1,0 +1,187 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "(gdb) hello example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/example/hello_world",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) cifar compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/cifar10_compiled",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) hello_world_5_compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/hello_world_5_compiled.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) compile hello_world_5_compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/compiler.exe",
+            "args": ["examples/hello_world_5.tflite", "examples/compiled_hello_world_5.cpp",  "hello_",
+                ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "name": "(gdb) cifar interpreter example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/cifar10",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "name": "(gdb) mobilenet interpreter example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/mobilenet.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "(gdb) mobilenet compiled example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/mobilenet_compiled.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "(gdb) compile mobilenet example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/compiler.exe",
+            "args": ["examples/mobilenet.tflite",  "examples/generated/compiled_mobilenet.cc", "mobilenet_"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        
+        {
+            "name": "(gdb) compile hello_world example Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen/windows_x86_64_debug/bin/compiler.exe",
+            "args":  [ "examples/hello_world.tflite", "examples/generated/compiled_hello_world.cc", "hello_world_"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

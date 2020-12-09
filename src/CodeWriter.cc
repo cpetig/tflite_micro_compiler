@@ -307,7 +307,7 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
   }
 }
 
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION >= 100
 void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
                                                  const std::string& name) {
   if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
@@ -316,6 +316,9 @@ void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
     out_ << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
     out_ << static_cast<unsigned>(sub8_details->container_bits) << ", ";
     out_ << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION >= 110
+    out_ << static_cast<unsigned>(sub8_details->sparsity_coding) << ", ";
+#endif
     out_ << "{}";
     out_ << "};\n";
   }
