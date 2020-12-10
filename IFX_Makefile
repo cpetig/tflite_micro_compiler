@@ -31,8 +31,8 @@ COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 
 BASE_TAGS := portable_optimized
 COMPILER_TAGS := $(BASE_TAGS)
-EXAMPLES_TAGS := $(BASE_TAGS)
-COMPILED_EXAMPLES_TAGS := $(BASE_TAGS)
+EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
+COMPILED_EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
 
 ifndef RUNTIME_KERNEL_VARIANT_SELECTION
 COMPILER_TAGS += record_model
@@ -75,23 +75,16 @@ examples:  regenerate
 
 examples_fpga: regenerate
 	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS)" BUILD_TYPE=debug build_examples
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
 	
 examples_fpga_mac_nostream: regenerate
 	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
 
 examples_fpga_mac_stream: regenerate
-	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_strm_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)es
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_strm_rival" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled 
 	
-examples_fpga_mac_emustream: regenerate
-	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILER_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_mcu BUILD_TYPE=debug build_examples
-	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_emu_rival" TARGET=ifx_riscv32_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
 
 examples_footprint:
 	$(MAKE) -f IFX_Makefile clean_examples
