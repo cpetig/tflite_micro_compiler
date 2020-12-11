@@ -258,33 +258,12 @@ bool tflmc::Compiler::init(const void *modelData) {
   return true;
 }
 
-void tflmc::Compiler::writeSource(std::ostream &out) {
-  CodeWriter wr(out, subgraph_);
 
-  wr << R"(
-#include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/kernels/micro_ops.h"
-
-#if defined __GNUC__
-#define ALIGN(X) __attribute__((aligned(X)))
-#elif defined _MSC_VER
-#define ALIGN(X) __declspec(align(X))
-#elif defined __TASKING__
-#define ALIGN(X) __align(X)
-#endif
-
-)";
-
-#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  tflite::ops::micro::writeStaticOpDataHeaders(out);
-#endif
-
+void tflmc::Compiler::writeCustomRegistrationsSource(CodeWriter &wr) {
 
   // declare custom registrations
   if (has_custom_ops) {
     wr << R"(namespace tflite {
-namespace ops {
 namespace micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
@@ -294,19 +273,29 @@ namespace micro {
       }
     }
     wr << R"(}  // namespace micro
-}  // namespace ops
 }  // namespace tflite
 
 )";
   }
+}
+
+
+
+void tflmc::Compiler::writeTypesAndWorkingArraysSource(CodeWriter &wr) {
+  
   wr << R"(namespace {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
+
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
+)";
+
+  wr << R"(
+
 enum used_operators_e {
   )";
   for (size_t i = 0; i < registrations_.size(); i++) {
@@ -317,8 +306,13 @@ enum used_operators_e {
          << ", ";
     }
   }
+  
   wr << R"( OP_LAST
 };
+)";
+
+  wr << R"(
+  
 struct TensorInfo_t { // subset of TfLiteTensor used for initialization from constant memory
 )";
   if (common_tensor_type.None) {
@@ -352,6 +346,13 @@ TfLiteTensor tflTensors[)"
 TfLiteEvalTensor evalTensors[)"
      << tensors_.size() << R"(];
 TfLiteRegistration registrations[OP_LAST];
+)";
+
+}
+
+
+void tflmc::Compiler::writeTflNodesSource(CodeWriter &wr) {
+  wr << R"(
 TfLiteNode tflNodes[)"
      << nodes_.size() << R"(];
 
@@ -383,6 +384,11 @@ TfLiteNode tflNodes[)"
     wr.writeIntArray(*node.inputs, "inputs" + std::to_string(i));
     wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
   }
+}
+
+
+void tflmc::Compiler::writeTensorDataSource(CodeWriter &wr) {
+  
   wr << R"(const TensorInfo_t tensorData[] = {
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
@@ -425,6 +431,10 @@ TfLiteNode tflNodes[)"
     wr << "},\n";
   }
   wr << "};\n";
+}
+
+void tflmc::Compiler::writeNodeDataSource(CodeWriter &wr) {
+
   wr << R"(const NodeInfo_t nodeData[] = {
 )";
   for (size_t i = 0; i < nodes_.size(); i++) {
@@ -454,6 +464,10 @@ TfLiteNode tflNodes[)"
   }
   wr << "};";
 
+}
+
+
+void tflmc::Compiler::writeScratchBufferOffsets(CodeWriter &wr) {
 
   auto &&scratchbuf_offsets =  memMap_.scratchBufOffsets();
   wr << R"(
@@ -478,7 +492,12 @@ static size_t scratchbuf_offsets[] = {
   wr << R"(
 };  
   )";
-     
+}
+
+
+
+void tflmc::Compiler::writeContextAllocationHandlersSource(CodeWriter &wr) {
+
   // TODO: This code assumes that:
   // * persistent allocations are made from the end
   // * scratch buffer indexes are allocated (couting up from 0
@@ -514,17 +533,11 @@ static void* GetScratchBuffer(struct TfLiteContext *ignore, int buffer_idx) {
 }
 )";
 
-// TODO:  Really need to support AllocateBufferForEval.  Should be easy - just need to
-// permit allocating a suitable "gap" in the arena or a dedicated scratchpad area.
+}
 
-wr << R"(
-} // namespace
-)";
 
-#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  tflite::ops::micro::writeCppFunctionsToInvokeRecorded(out);
-  tflite::ops::micro::writeStaticOpDataDefinitions(out);
-#endif
+void tflmc::Compiler::writeInitSource(CodeWriter &wr) {
+
 wr << R"(TfLiteStatus )"
      << prefix_ << R"(init() {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
@@ -574,6 +587,7 @@ wr << R"(TfLiteStatus )"
   }
   wr << R"(  }
 )";
+
   for (size_t i = 0; i < registrations_.size(); i++) {
     std::string opName;
     auto code = registrations_[i].code;
@@ -594,8 +608,8 @@ wr << R"(TfLiteStatus )"
   }
   wr << "\n";
 #if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  out << R"(
-  tflite::ops::micro::resetStaticDataCounters();
+  wr << R"(
+  tflite::micro::resetStaticDataCounters();
 )";
 #endif
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
@@ -615,9 +629,10 @@ wr << R"(TfLiteStatus )"
     }
   }
 )";
+
 #if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  out << R"(
-  tflite::ops::micro::resetStaticDataCounters();
+  wr << R"(
+  tflite::micro::resetStaticDataCounters();
 )";
 #endif
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
@@ -630,44 +645,52 @@ wr << R"(TfLiteStatus )"
   }
   return kTfLiteOk;
 }
-
-static const int inTensorIndices[] = {
-  )";
-  for (auto inIndex : inputTensorIndices_) {
-    out << inIndex << ", ";
-  }
-  out << R"(
-};
-TfLiteTensor* )"
-      << prefix_ << R"(input(int index) {
-  return &ctx.tensors[inTensorIndices[index]];
-}
-
-static const int outTensorIndices[] = {
-  )";  // TODO: perhaps use a smaller type than int?
-  for (auto outIndex : outputTensorIndices_) {
-    out << outIndex << ", ";
-  }
-  out << R"(
-};
-TfLiteTensor* )"
-      << prefix_ << R"(output(int index) {
-  return &ctx.tensors[outTensorIndices[index]];
-}
 )";
 
+}
 
-  out << R"(
+
+void tflmc::Compiler::writeTensorAccessorsSource(CodeWriter &wr) {
+  wr << R"(
+  static const int inTensorIndices[] = {
+    )";
+    for (auto inIndex : inputTensorIndices_) {
+      wr << inIndex << ", ";
+    }
+    wr << R"(
+  };
+  TfLiteTensor* )"
+        << prefix_ << R"(input(int index) {
+    return &ctx.tensors[inTensorIndices[index]];
+  }
+
+  static const int outTensorIndices[] = {
+    )";  // TODO: perhaps use a smaller type than int?
+    for (auto outIndex : outputTensorIndices_) {
+      wr << outIndex << ", ";
+    }
+    wr << R"(
+  };
+  TfLiteTensor* )"
+        << prefix_ << R"(output(int index) {
+    return &ctx.tensors[outTensorIndices[index]];
+  }
+  )";
+}
+
+
+void tflmc::Compiler::writeInvokeSource(CodeWriter &wr) {
+  wr << R"(
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
 )";
 #if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
-  out << R"(
-  tflite::ops::micro::resetStaticDataCounters();
+  wr << R"(
+  tflite::micro::resetStaticDataCounters();
 )";
 #endif
-  out << R"(
+  wr << R"(
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
@@ -679,6 +702,62 @@ TfLiteStatus )"
 }
 
 )";
+}
+
+
+void tflmc::Compiler::writeSource(std::ostream &out) {
+  CodeWriter wr(out, subgraph_);
+
+  wr << R"(
+#include "tensorflow/lite/c/builtin_op_data.h"
+#include "tensorflow/lite/c/common.h"
+#include "tensorflow/lite/micro/kernels/micro_ops.h"
+
+#if defined __GNUC__
+#define ALIGN(X) __attribute__((aligned(X)))
+#elif defined _MSC_VER
+#define ALIGN(X) __declspec(align(X))
+#elif defined __TASKING__
+#define ALIGN(X) __align(X)
+#endif
+
+)";
+
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  tflite::micro::writeStaticOpDataHeaders(out);
+#endif
+
+  writeCustomRegistrationsSource(wr);
+
+  writeTypesAndWorkingArraysSource(wr);
+
+  writeTflNodesSource(wr);
+
+  writeTensorDataSource(wr);
+
+  writeNodeDataSource(wr);
+
+  writeScratchBufferOffsets(wr);
+
+  writeContextAllocationHandlersSource(wr);
+
+// TODO:  Really need to support AllocateBufferForEval.  Should be easy - just need to
+// permit allocating a suitable "gap" in the arena or a dedicated scratchpad area.
+
+wr << R"(
+} // namespace
+)";
+
+#if TF_LITE_STATIC_KERNEL_VARIANTS_VERSION
+  tflite::micro::writeCppFunctionsToInvokeRecorded(out);
+  tflite::micro::writeStaticOpDataDefinitions(out);
+#endif
+
+  writeInitSource(wr);
+
+  writeTensorAccessorsSource(wr);
+  
+  writeInvokeSource(wr);
 
 }
 

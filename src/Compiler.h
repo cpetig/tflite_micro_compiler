@@ -11,6 +11,8 @@
 
 namespace tflmc {
 
+class CodeWriter;
+
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
                  const std::string &prefix = "model_");
@@ -30,6 +32,26 @@ class Compiler {
  private:
   bool init(const void *modelData);
   tflite::ErrorReporter &errReporter() { return microErrReporter_; }
+
+  void writeCustomRegistrationsSource(CodeWriter &wr);
+
+  void writeTflNodesSource(CodeWriter &wr);
+
+  void writeTensorDataSource(CodeWriter &wr);
+
+  void writeTypesAndWorkingArraysSource(CodeWriter &wr);
+
+  void writeNodeDataSource(CodeWriter &wr);
+
+  void writeScratchBufferOffsets(CodeWriter &wr);
+
+  void writeContextAllocationHandlersSource(CodeWriter &wr);
+
+  void writeInitSource(CodeWriter &wr);
+
+  void writeTensorAccessorsSource(CodeWriter &wr);
+
+  void writeInvokeSource(CodeWriter &wr);
 
  private:
   struct TensorInfo {
