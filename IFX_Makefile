@@ -1,5 +1,5 @@
 
-$(foreach setting, $(shell ../GET_PROJECT_SETTINGS.sh --makefile --id_prefix IFX_), $(eval $(setting)))
+include $(MICROAI_HOME)/scripts/GET_PROJECT_SETTINGS.mk
 
 INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 
