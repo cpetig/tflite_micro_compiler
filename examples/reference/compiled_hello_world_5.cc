@@ -13,11 +13,11 @@
 #define ALIGN(X) __align(X)
 #endif
 
-#include "tensorflow/lite/micro/kernels/portable_optimized/conv_op_data.h"
-#include "tensorflow/lite/micro/kernels/portable_optimized/depthwise_conv_op_data.h"
-#include "tensorflow/lite/micro/kernels/portable_optimized/fully_connected_op_data.h"
-#include "tensorflow/lite/micro/kernels/portable_optimized/pooling_op_data.h"
-#include "tensorflow/lite/micro/kernels/portable_optimized/reduce_op_data.h"
+#include "tensorflow/lite/micro/kernels/ifx_fast/conv/conv_op_data.h"
+#include "tensorflow/lite/micro/kernels/ifx_fast/depthwise_conv/depthwise_conv_op_data.h"
+#include "tensorflow/lite/micro/kernels/ifx_fast/fully_connected/fully_connected_op_data.h"
+#include "tensorflow/lite/micro/kernels/ifx_fast/pooling/pooling_op_data.h"
+#include "tensorflow/lite/micro/kernels/ifx_fast/reduce/reduce_op_data.h"
 namespace {
 
 constexpr int kTensorArenaSize = 312;
