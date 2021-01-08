@@ -29,7 +29,7 @@ EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5 hello_world_pruned_8
 EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
 COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
 
-BASE_TAGS := portable_optimized
+BASE_TAGS := ifx_fast_rival
 COMPILER_TAGS := $(BASE_TAGS)
 EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
 COMPILED_EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
