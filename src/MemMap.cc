@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-
+#include <iostream>
 
 
 tflmc::SufficientArena::SufficientArena( size_t sufficient_size, size_t sufficient_alignment)
@@ -130,9 +130,9 @@ static void PrintBar(const std::string &label, float start, float end) {
 
   if (start == -1.0f) {
     for (int i = 0; i < BAR_WIDTH + 2; i++) {
-      printf("#");
+      std::cout << '#';
     }
-    printf("\n");
+    std::cout << std::endl;
     return;
   }
 
@@ -158,17 +158,17 @@ static void PrintBar(const std::string &label, float start, float end) {
     }
   }
 
-  printf("#");
+  std::cout << '#';
   for (int i = 0; i < BAR_WIDTH; i++) {
     if (i >= labelStart && i < labelEnd) {
-      printf("%c", label[i - labelStart]);
+      std::cout << label[i - labelStart];
     } else if (i >= barStart && i < barEnd) {
-      printf(smallBar ? "|" : "X");
+      std::cout <<  (smallBar ? "|" : "X");
     } else {
-      printf(".");
+      std::cout << '.';
     }
   }
-  printf("#\n");
+ std::cout << '#' << std::endl;
 }
 
 void tflmc::MemMap::report() const {
@@ -181,7 +181,7 @@ void tflmc::MemMap::report() const {
     arenaSize = std::max(arenaSize, entry.base + entry.len);
   }
 
-  printf("ROM summary: %lu bytes total\n", constSize);
+  std::cout << "ROM summary: "<< constSize << " bytes total" << std::endl;
   PrintBar("", -1.0f, -1.0f);
   for (const auto &entry : m_romEntries) {
     PrintBar(entry.tag, entry.base / (float)constSize,
@@ -189,7 +189,7 @@ void tflmc::MemMap::report() const {
   }
   PrintBar("", -1.0f, -1.0f);
 
-  printf("RAM summary: %lu bytes total\n", arenaSize);
+  std::cout << "RAM summary: " <<arenaSize << " bytes total" << std::endl;
   PrintBar("", -1.0f, -1.0f);
   for (const auto &entry : m_ramEntries) {
     PrintBar(entry.tag, entry.base / (float)arenaSize,

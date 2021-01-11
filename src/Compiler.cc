@@ -192,7 +192,9 @@ bool tflmc::Compiler::init(const void *modelData) {
     auto reg = nodeAndReg.registration;
     auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
 
-    printf("operation %lu: %s\n", i, tflite::EnumNamesBuiltinOperator()[code]);
+    std::cout << "operation " << i 
+              << ": " << tflite::EnumNamesBuiltinOperator()[code]
+              << std::endl;
 
     RegistrationInfo regInfo;
     regInfo.reg = reg;
