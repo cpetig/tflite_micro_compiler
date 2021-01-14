@@ -67,7 +67,7 @@ std::string tflmc::to_string(TfLiteFusedActivation t) {
   switch (t) {
     NAME(kTfLiteActNone);
     NAME(kTfLiteActRelu);
-    NAME(kTfLiteActRelu1);
+    NAME(kTfLiteActReluN1To1);
     NAME(kTfLiteActRelu6);
     NAME(kTfLiteActTanh);
     NAME(kTfLiteActSignBit);
