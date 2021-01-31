@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/version.h"
 
 namespace tflmc {
 
@@ -23,6 +24,11 @@ class CodeWriter {
   void writeTensor(const TfLiteTensor &t, const std::string &name);
 
   void writeQuantization(const TfLiteQuantization &q, const std::string &name);
+
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
+  void writeQuantizationDetails(const TfLiteQuantization &q,
+                                const std::string &name);
+#endif
 
   template <typename T>
   CodeWriter &operator<<(T &&value) {

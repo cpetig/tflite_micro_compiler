@@ -177,34 +177,56 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
          << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
     return;
   }
+
   uint32_t alignment = t.bytes >= 8 ? 8 : t.bytes >= 4 ? 4 : 2;
-  out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "["
-       << t.dims->data[0];
-  for (uint32_t i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
+
+  // For packed formats the numer of serialized data items may not
+  // necessarily match the nominal dimensions of the tensor.
+  // We need to ensure this case is handled correctly.
+  size_t nominal_elts = 1;
+  for (int i = 0; i < t.dims->size; ++i) {
+    nominal_elts *= t.dims->data[i];
+  }
+
+  size_t serialized_elts = t.bytes / sizeof(T);
+
+  out_ << "const ALIGN(" << alignment << ") " << tname << " " << name << "[";
+
+  if (serialized_elts != nominal_elts) {
+    out_ << serialized_elts << " /* PACKED ";
+  }
+
+  out_ << t.dims->data[0];
+  for (int i = 1; i < t.dims->size; ++i) out_ << '*' << t.dims->data[i];
+  if (serialized_elts != nominal_elts) {
+    out_ << " */";
+  }
   out_ << "] = { ";
-  if (t.dims->size == 1)  // one dimension: Single line of data
-  {
-    for (uint32_t i = 0; i < t.dims->data[0]; ++i)
+  if (t.dims->size == 1 || serialized_elts != nominal_elts) {
+    // one dimension/packed: 10 per line of data
+    for (int i = 0; i < serialized_elts; ++i) {
+      if (i % 10 == 0) out_ << "\n    ";
       out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
-    out_ << "};\n";
-  } else if (t.dims->size == 2)  // two dimensions: Inner dimension is one line
-  {
-    for (uint32_t i = 0; i < t.dims->data[0]; ++i) {
+    }
+    out_ << "\n};\n";
+  } else if (t.dims->size == 2) {
+    // two dimensions: Inner dimension is one line
+    for (int i = 0; i < t.dims->data[0]; ++i) {
       out_ << "\n  ";
-      for (uint32_t j = 0; j < t.dims->data[1]; ++j)
+      for (int j = 0; j < t.dims->data[1]; ++j)
         out_ << (printT)(tflite::GetTensorData<T>(&t)[i * t.dims->data[1] + j])
              << ", ";
     }
     out_ << "\n};\n";
-  } else  // More dimensions: Inner two dimensions per line (space between two
-          // middle elements)
-  {
-    uint32_t outer_dim = t.dims->data[0];
-    uint32_t middle_dim = t.dims->data[t.dims->size - 2];
-    uint32_t inner_dim = t.dims->data[t.dims->size - 1];
-    for (uint32_t i = 1; i < t.dims->size - 2; ++i)
+  } else {
+    // More dimensions: Inner two dimensions per line (space between two
+    // middle elements)
+    int outer_dim = t.dims->data[0];
+    int middle_dim = t.dims->data[t.dims->size - 2];
+    int inner_dim = t.dims->data[t.dims->size - 1];
+    for (int i = 1; i < t.dims->size - 2; ++i)
       outer_dim *= t.dims->data[i];
-    for (uint32_t i = 0; i < outer_dim; ++i) {
+    for (int i = 0; i < outer_dim; ++i) {
       // out_ << "\n  ";
       // uint32_t outer_index = inner_dim * middle_dim;
       // output a meaningful index for this line
@@ -218,8 +240,8 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
         // 	outer_index *= t.dims->data[j];
       }
       out_ << "\n  /* " << indexstr << " */ ";
-      for (uint32_t j = 0; j < middle_dim; ++j) {
-        for (uint32_t k = 0; k < inner_dim; ++k)
+      for (int j = 0; j < middle_dim; ++j) {
+        for (int k = 0; k < inner_dim; ++k)
           out_ << (printT)(tflite::GetTensorData<T>(
                       &t)[(i * middle_dim + j) * inner_dim + k])
                << ",";
@@ -278,3 +300,18 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
          << " };\n";
   }
 }
+
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
+void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
+                                                 const std::string& name) {
+  if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
+    out_ << "const TfLiteCustomSub8BitPackingDetails " << name << " = { ";
+    auto sub8_details = q.details.data.custom_sub8bit_packing;
+    out_ << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
+    out_ << static_cast<unsigned>(sub8_details->container_bits) << ", ";
+    out_ << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
+    out_ << "{}";
+    out_ << "};\n";
+  }
+}
+#endif

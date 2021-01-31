@@ -1,19 +1,20 @@
 TF_DIR=../tensorflow
-CXXFLAGS=-g -std=c++14 -DTF_LITE_STATIC_MEMORY -DNDEBUG -O3 -DTF_LITE_DISABLE_X86_NEON -DSUFFICIENT_ARENA_SIZE=128\*1024\*1024 \
-	-I${TF_DIR} -I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/gemmlowp \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/flatbuffers/include \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/ruy \
-	-I${TF_DIR}/tensorflow/lite/micro/tools/make/downloads/kissfft
-LIBS=-L${TF_DIR}/tensorflow/lite/micro/tools/make/gen/linux_x86_64/lib/ \
-	-ltensorflow-microlite -ldl
+include common.mk
+
+.PHONY: tflite all
 
 all: compiler examples
 
-compiler: src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
-	$(CXX) -o $@ $^ ${LIBS}
+tflite:
+	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/Makefile microlite
+
+COMPILER_OBJS = src/main.o src/Compiler.o src/CodeWriter.o src/TypeToString.o src/RecordAllocations.o src/MemMap.o src/CustomOperators.o
+
+compiler: $(COMPILER_OBJS) tflite
+	$(CXX) $(LDOPTS) -o $@ $(COMPILER_OBJS) $(LIBS)
 
 clean: clean-compiler clean-examples
+	$(MAKE) -C $(TF_DIR) -f tensorflow/lite/micro/tools/make/makefile clean
 
 FORMAT_FILES := $(shell find src -regex '.*\(h\|cpp\)')
 
@@ -29,3 +30,4 @@ clean-examples:
 
 clean-compiler:
 	$(RM) src/*.o compiler
+	

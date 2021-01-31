@@ -33,6 +33,9 @@ class Compiler {
 
  private:
   struct TensorInfo {
+    TensorInfo(const TfLiteTensor *tensor_ptr) :
+      tensor(tensor_ptr)
+    {}
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
@@ -48,6 +51,11 @@ class Compiler {
     }
   };
   struct NodeInfo {
+    NodeInfo() {}
+    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index) :
+      node(tfl_node),
+      regIndex(reg_index)
+    {}
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
