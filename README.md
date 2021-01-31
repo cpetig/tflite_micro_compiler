@@ -97,7 +97,7 @@ make format
 
 ## Make
 
-- check out tensorflow master next to this project (in ../tensorflow)
+- check out tensorflow r2.3 next to this project (in ../tensorflow)
 - start with building the tflite micro library as described in https://www.tensorflow.org/lite/microcontrollers/library:
 
   - `cd ../tensorflow`
@@ -117,10 +117,10 @@ make format
     ./compiler hello_world.tflite hello_compiled.cpp hello_
     ```
 
-- for a quick view into the generated code see [`compiled_hello.cpp`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/compiled_hello.cpp)
+- for a quick view into the generated code see [`compiled_hello.cpp`](https://github.com/cpetig/tflite_micro_compiler/blob/r2.3/examples/compiled_hello.cpp)
 
-  You can compare calling into interpreter and compiled code between [`hello_world.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world.cc)
-  and [`hello_world2.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/master/examples/hello_world2.cc)
+  You can compare calling into interpreter and compiled code between [`hello_world.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/r2.3/examples/hello_world.cc)
+  and [`hello_world2.cc`](https://github.com/cpetig/tflite_micro_compiler/blob/r2.3/examples/hello_world2.cc)
 
 - The example directory contains a collection of traditional tflite micro and compiled versions:
 
