@@ -301,7 +301,7 @@ int32_t op_user_data2_sum_of_weights_factor[] = {
 OpData op_user_data[] = {
   {1307038386, 6, 0, 255, 0, op_user_data0_sum_of_weights_factor, EvalQuantizedUInt8}, 
   {1400793410, 7, 0, 255, 0, op_user_data1_sum_of_weights_factor, EvalQuantizedUInt8}, 
-  {1920999296, 4, 0, 255, 0, op_user_data2_sum_of_weights_factor, (PackedFullyConnected<uint16_t, 5, 16 / 5>::EvalUint8PackedWeights)}
+  {1920999296, 4, 0, 255, 0, op_user_data2_sum_of_weights_factor, (PackedFullyConnectedUInt8<uint16_t, 5, 16 / 5>::EvalUint8PackedWeights)}
 };
   size_t inst_counter = 0;
 
