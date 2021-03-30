@@ -7,6 +7,7 @@ build*/
 .cproject
 .project
 .settings/
+.vscode
 ALL_TESTS_*.log
 *_sizes.txt
 gen/
