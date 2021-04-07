@@ -24,10 +24,4 @@ done
 
 make -f IFX_Makefile mrproper
 make -f IFX_Makefile -j 6  build_compiler
-
-if [ -n "$FORCE_INSTALL" -o ! -f  "${TFLITE_MICRO_ROOT}/install_ok" ]
-then
-    make -f IFX_Makefile  install
-else
-    echo "Skipping converter install to ${TFLITE_MICRO_ROOT} - install_ok tag already present" 
-fi
+make -f IFX_Makefile  install
