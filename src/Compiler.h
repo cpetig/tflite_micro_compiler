@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "MemMap.h"
+#include "RecordAllocations.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -89,6 +90,7 @@ class Compiler {
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+  std::vector<tflmc::Allocation> runtimeAllocations_;
 
   bool has_custom_ops = false;
   bool has_quantization = false;

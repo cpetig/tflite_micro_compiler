@@ -2,6 +2,7 @@
 #define TFLMCOMPILER_RECORDALLOCATIONS_H
 
 #include "tensorflow/lite/schema/schema_generated.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
 #include <cinttypes>
 
 namespace tflmc {

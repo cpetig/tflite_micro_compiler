@@ -8,7 +8,6 @@
 
 #include "CodeWriter.h"
 #include "CustomOperators.h"
-#include "RecordAllocations.h"
 #include "TypeToString.h"
 #include "tensorflow/lite/version.h"
 
@@ -180,13 +179,13 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
+  runtimeAllocations_ = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
-  for (const auto &alloc : runtimeAllocations) {
+  for (const auto &alloc : runtimeAllocations_) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
   }
   size_t totalRuntimeAllocSize = 0;
-  for (const auto &alloc : runtimeAllocations) {
+  for (const auto &alloc : runtimeAllocations_) {
     // TODO: This drops the alignment between buffers. Is this fine?
     totalRuntimeAllocSize += alloc.len;
     ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
@@ -405,13 +404,37 @@ TfLiteNode tflNodes[)"
     }
     wr << "},\n";
   }
-  wr << "};";
+  wr << "};\n\n";
+  wr << "#ifdef TFLMC_DEBUG_ALLOCATIONS\n";
+  wr << "#include <cstdio>\n";
+  wr << "const int ExpectedNumAllocations = " << runtimeAllocations_.size() << ";\n";
+  wr << "const size_t ExpectedAllocSizes[] = { ";
+  for (const auto &alloc : runtimeAllocations_) {
+    wr << alloc.len << ", ";
+  }
+  wr << "};\n";
+  wr << "#endif\n";
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
   wr << R"(
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
+
+#ifdef TFLMC_DEBUG_ALLOCATIONS
+  static int AllocCount = 0;
+  if (AllocCount >= ExpectedNumAllocations)
+  {
+    printf("AllocatePersistentBuffer(%lu)#%i: Called too often!\n", bytes, AllocCount);
+    return 0;
+  }
+  if (bytes != ExpectedAllocSizes[AllocCount])
+  {
+    printf("AllocatePersistentBuffer(%lu)#%i: Unexpected allocation size!\n", bytes, AllocCount);
+    return 0;
+  }
+  AllocCount++;
+#endif
 
   AllocPtr -= bytes;
   return AllocPtr;
