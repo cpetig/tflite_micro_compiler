@@ -184,10 +184,10 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (const auto &alloc : runtimeAllocations_) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
   }
-  size_t totalRuntimeAllocSize = 0;
+  totalRuntimeAllocSize_ = 0;
   for (const auto &alloc : runtimeAllocations_) {
     // TODO: This drops the alignment between buffers. Is this fine?
-    totalRuntimeAllocSize += alloc.len;
+    totalRuntimeAllocSize_ += alloc.len;
     ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
     memMap_.recordRAM(offset, alloc.len,
                       "PersistentBuf" + std::to_string(alloc.nodeIndex));
@@ -198,7 +198,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   // - Scratch buffers
   // - Persistent buffers
   // tensor metadata is not included, since we declare them outside the arena
-  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
+  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize_;
 
   // TODO: This is overestimating by quite a bit because of ABI differences.
   size_t tensorMetaSize = tensors_.size() * sizeof(TfLiteTensor);
@@ -407,6 +407,7 @@ TfLiteNode tflNodes[)"
   wr << "};\n\n";
   wr << "#ifdef TFLMC_DEBUG_ALLOCATIONS\n";
   wr << "#include <cstdio>\n";
+  wr << "const size_t ExpectedTotalAllocSize = " << totalRuntimeAllocSize_ << ";\n";
   wr << "const int ExpectedNumAllocations = " << runtimeAllocations_.size() << ";\n";
   wr << "const size_t ExpectedAllocSizes[] = { ";
   for (const auto &alloc : runtimeAllocations_) {
@@ -426,11 +427,14 @@ static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
   if (AllocCount >= ExpectedNumAllocations)
   {
     printf("AllocatePersistentBuffer(%lu)#%i: Called too often!\n", bytes, AllocCount);
-    return 0;
   }
   if (bytes != ExpectedAllocSizes[AllocCount])
   {
     printf("AllocatePersistentBuffer(%lu)#%i: Unexpected allocation size!\n", bytes, AllocCount);
+  }
+  if ((AllocPtr - bytes) < (tensor_arena + sizeof(tensor_arena) - ExpectedTotalAllocSize))
+  {
+    printf("AllocatePersistentBuffer(%lu)#%i: Buffer would corrupt tensors!\n", bytes, AllocCount);
     return 0;
   }
   AllocCount++;

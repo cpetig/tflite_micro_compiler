@@ -91,6 +91,7 @@ class Compiler {
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
   std::vector<tflmc::Allocation> runtimeAllocations_;
+  size_t totalRuntimeAllocSize_;
 
   bool has_custom_ops = false;
   bool has_quantization = false;
