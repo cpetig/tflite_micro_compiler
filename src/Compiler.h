@@ -5,7 +5,7 @@
 
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
@@ -28,6 +28,8 @@ class Compiler {
 
   // Returns a name that describes a tensors relation to network layers.
   std::string getTensorName(int tensorIndex) const;
+
+  bool noErrorsReported() const;
 
  private:
   bool init(const void *modelData);
@@ -96,8 +98,26 @@ class Compiler {
   };
 
  private:
+
+  /**
+   * @brief Error reporter that tracks if Error was reported.
+   * 
+   */
+  class TrackingErrorReporter : public tflite::ErrorReporter {
+    public:
+
+      ~TrackingErrorReporter() {}
+      int Report(const char* format, va_list args) override;
+
+      bool getErrorReported() const { return error_reported_; }
+
+    private:
+
+      bool error_reported_ = false;
+  };
+
   std::string prefix_;
-  tflite::MicroErrorReporter microErrReporter_;
+  TrackingErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
   tflite::AllOpsResolver resolver_;

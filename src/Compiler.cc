@@ -5,6 +5,7 @@
 #include <fstream>
 #include <regex>
 #include <vector>
+#include <cstdio>
 
 #include "CodeWriter.h"
 #include "CustomOperators.h"
@@ -46,6 +47,15 @@ static std::vector<int> flat_namespaced_ops(
   }
 );
 
+
+int tflmc::Compiler::TrackingErrorReporter::Report(const char* format, va_list args) {
+  vfprintf(stderr, format, args);
+  error_reported_ = true;
+  return 0;
+}
+
+
+
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
                         const std::string &prefix) {
@@ -84,7 +94,7 @@ bool tflmc::CompileFile(const std::string &modelFileName,
     Compiler compiler(model_data.data(), prefix);
     compiler.writeSource(outFile);
     compiler.writeHeader(outHeaderFile);
-    return true;
+    return compiler.noErrorsReported();
   } catch (const std::exception &e) {
     std::cerr << e.what() << "\n";
   } catch (...) {
@@ -140,7 +150,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
       new tflite::MicroInterpreter(
         model_, resolver_, aligned_arena_start_, arena_size_,
-        &microErrReporter_));
+        &errReporter()));
 #if TFLMC_USE_INTERPRETER_HOOKS
   tflmc::SetRecordAllocationhooks( interpreter_.get(), aligned_arena_start_, arena_size_);
 #endif
@@ -708,7 +718,7 @@ TfLiteStatus )"
 
 
 void tflmc::Compiler::writeSource(std::ostream &out) {
-  CodeWriter wr(out, subgraph_);
+  CodeWriter wr(out, subgraph_, microErrReporter_);
 
   wr << R"(
 #include "tensorflow/lite/c/builtin_op_data.h"
@@ -764,7 +774,7 @@ wr << R"(
 }
 
 void tflmc::Compiler::writeHeader(std::ostream &out) {
-  tflmc::CodeWriter wr(out, subgraph_);
+  tflmc::CodeWriter wr(out, subgraph_, errReporter());
 
   std::string code = R"(
 #ifndef %PREFIX%GEN_H
@@ -856,4 +866,8 @@ std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
   }
 
   return ss.str();
+}
+
+bool tflmc::Compiler::noErrorsReported() const { 
+  return ! microErrReporter_.getErrorReported();
 }

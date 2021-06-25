@@ -5,41 +5,53 @@
 
 #include "TypeToString.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
 
 namespace {
 
 class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
  public:
+
   void* Allocate(size_t size, size_t alignment_hint) override {
     lastAllocSize = size;
-    return malloc(size);
+    allocated_blocks.push_back(std::make_unique<uint8_t []>(size));
+    return reinterpret_cast<void *>(allocated_blocks.back().get());
   }
-  void Deallocate(void* data) override { free(data); }
+
+  void Deallocate(void* data) override {
+  }
+
+
   size_t GetLastAllocSize() { return lastAllocSize; }
 
  private:
+  std::vector<std::unique_ptr<uint8_t []>>  allocated_blocks;
   size_t lastAllocSize = 0;
 };
+
+
 size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
-                          const tflite::SubGraph* subgraph) {
+                          const tflite::SubGraph* subgraph,
+                          tflite::ErrorReporter &errReporter) {
   // There seems to be no simple query function for this, so tickle the
   // information out of the parse function.
   auto dummyOp = subgraph->operators()->Get(0);
-  tflite::MicroErrorReporter errReporter;
   AllocatorToGetLastAllocSize allocator;
   void* outData = nullptr;
-  if (tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
-                          &outData) == kTfLiteOk)
-    free(outData);
+  (void)tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
+                          &outData);
   return allocator.GetLastAllocSize();
 }
 
 }  // namespace
 
 tflmc::CodeWriter::CodeWriter(std::ostream& out,
-                              const tflite::SubGraph* subgraph)
-    : out_(out), subgraph_(subgraph) {
+                              const tflite::SubGraph* subgraph,
+                              tflite::ErrorReporter &err_reporter
+                              )
+    : out_(out), subgraph_(subgraph)
+    , err_reporter_(err_reporter) 
+{
   // Setup stream: Print booleans as string:
   out_ << std::boolalpha;
   // Print floats with precision that is sufficient for exact back-conversion:
@@ -131,7 +143,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       out_ << p->axis << ", " << to_string(p->activation) << " };";
     } break;
     default: {
-      size_t datalen = GetBuiltinDataSize(op, subgraph_);
+      size_t datalen = GetBuiltinDataSize(op, subgraph_, err_reporter_);
       uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
       out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
            << "] = { ";

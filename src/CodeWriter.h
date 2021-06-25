@@ -4,6 +4,7 @@
 #include <iostream>
 #include "tensorflow/lite/version.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/version.h"
 
 namespace tflmc {
@@ -11,7 +12,8 @@ namespace tflmc {
 // Helper functions for top-level code generation.
 class CodeWriter {
  public:
-  CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph);
+  CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph,
+             tflite::ErrorReporter &errReporter);
 
   void writeBuiltin(tflite::BuiltinOperator op, const void *data,
                     const std::string &name);
@@ -39,6 +41,7 @@ class CodeWriter {
  private:
   std::ostream &out_;
   const tflite::SubGraph *subgraph_ = nullptr;
+  tflite::ErrorReporter &err_reporter_;
 };
 
 }  // namespace tflmc
