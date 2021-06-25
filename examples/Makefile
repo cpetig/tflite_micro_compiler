@@ -2,62 +2,37 @@ TF_DIR=../../tensorflow
 include ../common.mk
 
 
-COMPILED_FILES_SELECTION ?= reference
-CXXFLAGS += -I $(COMPILED_FILES_SELECTION)
-
-EXAMPLES=hello_world hello_world_compiled hello_world_5 hello_world_5_compiled \
-  hello_world_sparse hello_world_sparse_compiled \
-  cifar10 cifar10_compiled  mobilenet mobilenet_compiled
-
-BINARIES= $(foreach e,  $(EXAMPLES), $(e)$(EXE_SUFFIX))
-
-$(info $(BINARIES))
-
-all: $(BINARIES)
-
-run_all: all
-	for f in $(BINARIES) ; do echo $$f ; ./$$f ; done
+all: hello_world  hello_world_compiled  mobilenet mobilenet_compiled cifar10 cifar10_compiled
 
 clean:
-	$(RM) *.o $(BINARIES)
-	rm -rf generated
+	$(RM) *.o hello_world hello_world_compiled  mobilnet mobilnet_compiled cifar10 cifar10_compiled
 
-mobilenet$(EXE_SUFFIX): mobilenet.o mobilenet_model.o gnu.o
+mobilenet: mobilenet.o mobilenet_v1_0_25_160_quantized.o gnu.o
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
-mobilenet_compiled$(EXE_SUFFIX): mobilenet2.o $(COMPILED_FILES_SELECTION)/compiled_mobilenet.o gnu.o
+mobilenet_compiled: mobilenet2.o compiled_mobilenet.o gnu.o
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
-hello_world$(EXE_SUFFIX): hello_world.o hello_world_model.o
+hello_world: hello_world.o hello_world_model.o
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
-hello_world_compiled$(EXE_SUFFIX): hello_world2.o $(COMPILED_FILES_SELECTION)/compiled_hello_world.o
+hello_world_compiled: hello_world2.o compiled_hello_world.o
 	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
 
+hello_world_model.o: hello_world_model.cc
+	$(CXX) -o $@ -c $^ $(CXXFLAGS)
 
-hello_world_5$(EXE_SUFFIX): hello_world_5.o hello_world_5_model.o
-	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
-
-hello_world_5_compiled$(EXE_SUFFIX): hello_world2_5.o $(COMPILED_FILES_SELECTION)/compiled_hello_world_5.o
+cifar10: cifar10_model.o truck.o cifar10.o
 	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
 
-hello_world_sparse$(EXE_SUFFIX): hello_world_sparse.o hello_world_pruned_8.o
+cifar10_compiled: truck.o compiled_cifar10.o cifar10_run_comp.o
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
-hello_world_sparse_compiled$(EXE_SUFFIX): hello_world2_sparse.o $(COMPILED_FILES_SELECTION)/compiled_hello_world_pruned_8.o
-	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
+lstm_compiled: lstm_test.o lstm_compiled.o
+	$(CXX) -o $@ $^ ${LIBS}
 
-
-cifar10$(EXE_SUFFIX): cifar10_model.o truck.o cifar10.o
-	$(CXX) -o $@ $^ $(LDOPTS)  $(LIBS)
-
-cifar10_compiled$(EXE_SUFFIX): truck.o $(COMPILED_FILES_SELECTION)/compiled_cifar10.o cifar10_run_comp.o
-	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
-
-regenerate: ../compiler$(EXE_SUFFIX)
-	mkdir -p generated
-	../compiler hello_world.tflite generated/compiled_hello_world.cc hello_world_
-	../compiler hello_world_5.tflite generated/compiled_hello_world_5.cc hello_world_5_
-	../compiler hello_world_5.tflite generated/compiled_hello_world_pruned_8.cc hello_world_pruned_8_
-	../compiler mobilenet.tflite generated/compiled_mobilenet.cc mobilenet_
-	../compiler cifar10.tflite generated/compiled_cifar10.cc cifar10_
+regenerate: ../compiler
+	../compiler hello_world.tflite compiled_hello.cpp hello_ 
+	../compiler mobilenet_v1_0_25_160_quantized.tflite compiled_mobilenet.cpp mobilenet_
+	../compiler cifar10.tflite cifar10_compiled.cc cifar_
+	../compiler lstm2.tflite lstm_compiled.cc lstm_

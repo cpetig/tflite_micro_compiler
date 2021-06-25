@@ -280,7 +280,7 @@ namespace micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-        wr << "extern TfLiteRegistration Register_"
+        wr << "extern TfLiteRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
@@ -605,8 +605,12 @@ wr << R"(TfLiteStatus )"
     auto code = registrations_[i].code;
     if (code == tflite::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
+      wr << "  registrations[OP_" << opName << "] = *(tflite::ops::micro::Register_"
+         << opName << "());\n";
     } else {
       opName = tflite::EnumNameBuiltinOperator(code);
+      wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
+         << opName << "();\n";
     }
     const char *op_register_fn_namspaces;
     if (std::find(flat_namespaced_ops.begin(), flat_namespaced_ops.end(), code) != flat_namespaced_ops.end()) {
