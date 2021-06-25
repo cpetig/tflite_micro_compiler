@@ -1,6 +1,9 @@
 
 include ../scripts/GET_PROJECT_SETTINGS.mk
 
+
+
+
 INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 
 COMPILED_FILES_SELECTION ?= generated
@@ -9,7 +12,17 @@ LOCAL_CPPFLAGS := -DTFLMC_USE_INTERPRETER_HOOKS
 
 # The actual tflite(u) Makefile!!
 
+//TFLITE_U_FROM_SRC=1
+ifdef TFLITE_U_FROM_SRC
+$(info Buld from working-copy source...)
+INSTALLED_TFLITE_MICRO=$(abspath ../tflite_u)
+TFLITE_U_PATH=$(INSTALLED_TFLITE_MICRO)/
+include $(TFLITE_U_PATH)tensorflow/lite/micro/tools/make/Makefile
+else
+$(info Buld from installed tflite_u...)
+INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
 include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
+endif
 
 
 HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
@@ -24,10 +37,12 @@ ifeq ($(TARGET),linux)
 endif
 
 
-COMPILER_EXE := $(GENDIR)bin/compiler$(EXE_SUFFIX)
 EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5 hello_world_pruned_8
+CONV_ONLY_EXAMPLE_NETS:=argmax
 EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
 COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
+
+TFLITE_U_FROM_SRC=$(TFLITE_U_FROM_SRC)
 
 BASE_TAGS := ifx_fast_rival
 COMPILER_TAGS := $(BASE_TAGS)
@@ -53,12 +68,14 @@ else
   TEST_RUNNER := $(TEST_SCRIPT) --no-check
 endif
 
-
-HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH))_debug
-EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH))$(BUILD_SUFFIX)
-COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH))$(BUILD_SUFFIX)
+#
+# Nasty... this depends on internals of the tflite(u) Makefile...
+HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH)  $(TOOLCHAIN))_debug
+EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH) $(TOOLCHAIN))$(BUILD_SUFFIX)
+COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH) $(TOOLCHAIN))$(BUILD_SUFFIX)
 
 HOST_COMPILER:=$(HOST_COMPILER_GENDIR)/bin/compiler$(EXE_SUFFIX)
+
 
 .PHONY: examples run_examples regenerate regenerate_examples build_compiler native_compiler
 .PHONY: clean_examples mrproper
@@ -111,9 +128,9 @@ run_examples:  examples
 	set -e ; for f in $(EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(EXAMPLES_GENDIR)/bin/$${f}; done
 	set -e ; for f in $(COMPILED_EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(COMPILED_EXAMPLES_GENDIR)/bin/$${f}; done
 
-COMPILED_MODELS = $(foreach n, $(EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
+COMPILED_MODELS = $(foreach n, $(EXAMPLE_NETS) $(CONV_ONLY_EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
 
-regenerate_examples: $(COMPILED_MODELS)
+regenerate_examples: $(COMPILED_MODELS) 
 	
 examples/generated/compiled_%.cc: examples/%.tflite $(HOST_COMPILER)
 	@mkdir -p examples/generated
