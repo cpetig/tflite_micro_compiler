@@ -31,8 +31,9 @@ IF(NOT TF_SRC)
     ELSE()
         FetchContent_Declare(
             tf 
-            GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
+            GIT_REPOSITORY https://github.com/tensorflow/tflite-micro.git
             GIT_PROGRESS FALSE
+            GIT_TAG main
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             QUIET
             )
