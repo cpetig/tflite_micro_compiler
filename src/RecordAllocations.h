@@ -1,7 +1,9 @@
 #ifndef TFLMCOMPILER_RECORDALLOCATIONS_H
 #define TFLMCOMPILER_RECORDALLOCATIONS_H
 
+//#define private public
 #include "tensorflow/lite/schema/schema_generated.h"
+//#undef private
 #include <cinttypes>
 
 namespace tflmc {

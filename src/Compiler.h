@@ -1,13 +1,23 @@
 #ifndef TFLMCOMPILER_COMPILER_H
 #define TFLMCOMPILER_COMPILER_H
 
+//#define private public
+#include "tensorflow/lite/micro/micro_interpreter.h"
+//#undef private
+#include "tensorflow/lite/micro/micro_allocator.h"
+//#include "tensorflow/lite/micro/micro_graph.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+
+
 #include <iostream>
 
 #include "MemMap.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/core/api/error_reporter.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/schema/schema_generated.h"
+//#include "tensorflow/lite/micro/all_ops_resolver.h"
+//#include "tensorflow/lite/core/api/error_reporter.h"
+//#include "tensorflow/lite/schema/schema_generated.h"
+
 
 namespace tflmc {
 
@@ -125,6 +135,7 @@ class Compiler {
   uint8_t *aligned_arena_start_;
   size_t arena_size_; 
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
+  //static tflite::MicroAllocator* allocator_;
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
