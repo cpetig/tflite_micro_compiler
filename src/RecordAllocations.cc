@@ -226,7 +226,7 @@ for (size_t i = 0; i< graph_.NumSubgraphs();i++)  {
     }
   }
 
-#endif
+
 
   tflmc::UnloadCustom(custom);
   for( auto &sb_i : g_logged_scratch_buffers )
