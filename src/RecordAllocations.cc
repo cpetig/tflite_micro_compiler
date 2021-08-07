@@ -9,8 +9,7 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_graph.h"
-//#include "tensorflow/lite/micro/all_ops_resolver.h"
-//#include "tensorflow/lite/micro/micro_error_reporter.h"
+
 #if !TFLMC_USE_INTERPRETER_HOOKS
 #undef private
 #endif
@@ -178,34 +177,10 @@ void tflmc::RecordAllocations(
 
   tflite::NodeAndRegistration *nodeAndRegs;
   TfLiteEvalTensor *eval_tensors=nullptr;
-  #if 0
-  allocator->StartModelAllocation(model, resolver, &nodeAndRegs, &eval_tensors);
-
-  g_allocator = allocator;
-  ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
-  ctx->RequestScratchBufferInArena = nullptr;
-  auto ctx_GetScratchBuffer =  ctx->GetScratchBuffer;
-  ctx->GetScratchBuffer = nullptr;
-
-
-  auto subgraph = model->subgraphs()->Get(0);
-  for (size_t i = 0; i < subgraph->operators()->size(); i++) {
-    auto node = &nodeAndRegs[i].node;
-    auto reg = nodeAndRegs[i].registration;
-    if (reg->init) {
-      g_currentNodeIndex = i;
-      node->user_data = reg->init(ctx, (const char *)node->builtin_data, 0);
-    }
-  }
-  #else
+  
   tflite::SubgraphAllocations *subgraph_allocations = allocator->StartModelAllocation(model);
   std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";  
   
-
-  //tflite::SubgraphAllocations *subgraph_allocations = allocator->
-  if (subgraph_allocations == nullptr)
-    std::cout<<"subgraph_allocations is null\n";
-  std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";   
     
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
@@ -213,10 +188,10 @@ void tflmc::RecordAllocations(
   auto ctx_GetScratchBuffer =  ctx->GetScratchBuffer;
   ctx->GetScratchBuffer = nullptr;
 
-  //tflite::MicroGraph graph_ = interpreter.graph_;
+
   interpreter.graph_.SetSubgraphAllocations(subgraph_allocations);
   interpreter.PrepareNodeAndRegistrationDataFromFlatbuffer();
-tflite::MicroGraph graph_ = interpreter.graph_;
+  tflite::MicroGraph graph_ = interpreter.graph_;
 
   for (size_t i = 0; i< graph_.NumSubgraphs();i++)  {
     for(size_t j = 0 ; j< model->subgraphs()->Get(i)->operators()->size();j++){
@@ -224,35 +199,19 @@ tflite::MicroGraph graph_ = interpreter.graph_;
       const TfLiteRegistration *reg = subgraph_allocations[i].node_and_registrations[j].registration;
       if(reg == nullptr) std::cout<<"reg is null\n";
       auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
-std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";  
+
     std::cout << "operation " << j 
               << ": " << tflite::EnumNamesBuiltinOperator()[code]
               << std::endl;
-      std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";    
+
       if (reg->init) {
-        std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";  
       g_currentNodeIndex = i;
       node->user_data = reg->init(ctx, (const char *)node->builtin_data, 0);
       }
     }
   }
-  #endif
 
-std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";     
   ctx->RequestScratchBufferInArena = &LoggingRequestScratchBufferInArena;
-#if 0
-  for (size_t i = 0; i < subgraph->operators()->size(); i++) {
-    auto node = &nodeAndRegs[i].node;
-    auto reg = nodeAndRegs[i].registration;
-    if (reg->prepare) {
-      g_currentNodeIndex = i;
-      reg->prepare(ctx, node);
-    }
-    allocator->ResetTempAllocations();
-  }
-  
-  allocator->FinishModelAllocation(model, eval_tensors);
-#else
 
 for (size_t i = 0; i< graph_.NumSubgraphs();i++)  {
     for(size_t j = 0 ; j< model->subgraphs()->Get(i)->operators()->size();j++){
@@ -261,16 +220,14 @@ for (size_t i = 0; i< graph_.NumSubgraphs();i++)  {
       if (reg->prepare) {
         g_currentNodeIndex = j;
         reg->prepare(ctx, node);
-        //node->user_data = reg->init(ctx, (const char *)node->builtin_data, 0);
       }
       allocator->FinishPrepareNodeAllocations(/*node_id=*/j);
-      //allocator->ResetTempAllocations();
+
     }
   }
-  std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";     
-  //allocator->FinishModelAllocation(model,subgraph_allocations,nullptr);
+
 #endif
-std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";     
+
   tflmc::UnloadCustom(custom);
   for( auto &sb_i : g_logged_scratch_buffers )
   {
