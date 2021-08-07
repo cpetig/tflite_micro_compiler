@@ -236,10 +236,9 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 #else
-  std::cout << "before getGraph()\n";
+
   tflite::MicroGraph *graph_ = interpreter_->getGraph();
-  // tflite::SubgraphAllocations *subgraph_allocations =
-  // _allocator->StartModelAllocation(model);
+
   tflite::SubgraphAllocations *subgraph_allocations = graph_->GetAllocations();
   std::cout << "after get subgraph allocations from graph\n";
   for (size_t i = 0; i < graph_->NumSubgraphs(); i++) {
