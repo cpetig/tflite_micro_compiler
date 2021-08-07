@@ -2,12 +2,9 @@
 #define TFLMCOMPILER_CODEWRITER_H
 
 #include <iostream>
-//#define private public
-#include "tensorflow/lite/micro/micro_interpreter.h"
+
 #include "tensorflow/lite/core/api/error_reporter.h"
-//#undef private
-
-
+#include "tensorflow/lite/micro/micro_interpreter.h"
 
 namespace tflmc {
 

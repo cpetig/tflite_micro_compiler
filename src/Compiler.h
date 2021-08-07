@@ -1,23 +1,14 @@
 #ifndef TFLMCOMPILER_COMPILER_H
 #define TFLMCOMPILER_COMPILER_H
 
-//#define private public
-#include "tensorflow/lite/micro/micro_interpreter.h"
-//#undef private
-#include "tensorflow/lite/micro/micro_allocator.h"
-//#include "tensorflow/lite/micro/micro_graph.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/core/api/error_reporter.h"
-#include "tensorflow/lite/schema/schema_generated.h"
-
-
 #include <iostream>
 
 #include "MemMap.h"
-//#include "tensorflow/lite/micro/all_ops_resolver.h"
-//#include "tensorflow/lite/core/api/error_reporter.h"
-//#include "tensorflow/lite/schema/schema_generated.h"
-
+#include "tensorflow/lite/core/api/error_reporter.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_allocator.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
 
 namespace tflmc {
 
@@ -67,9 +58,7 @@ class Compiler {
 
  private:
   struct TensorInfo {
-    TensorInfo(const TfLiteTensor *tensor_ptr) :
-      tensor(tensor_ptr)
-    {}
+    TensorInfo(const TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
@@ -86,10 +75,8 @@ class Compiler {
   };
   struct NodeInfo {
     NodeInfo() {}
-    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index) :
-      node(tfl_node),
-      regIndex(reg_index)
-    {}
+    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index)
+        : node(tfl_node), regIndex(reg_index) {}
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
@@ -108,22 +95,19 @@ class Compiler {
   };
 
  private:
-
   /**
    * @brief Error reporter that tracks if Error was reported.
-   * 
+   *
    */
   class TrackingErrorReporter : public tflite::ErrorReporter {
-    public:
+   public:
+    ~TrackingErrorReporter() {}
+    int Report(const char *format, va_list args) override;
 
-      ~TrackingErrorReporter() {}
-      int Report(const char* format, va_list args) override;
+    bool getErrorReported() const { return error_reported_; }
 
-      bool getErrorReported() const { return error_reported_; }
-
-    private:
-
-      bool error_reported_ = false;
+   private:
+    bool error_reported_ = false;
   };
 
   std::string prefix_;
@@ -133,9 +117,10 @@ class Compiler {
   tflite::AllOpsResolver resolver_;
   SufficientArena arena_;
   uint8_t *aligned_arena_start_;
-  size_t arena_size_; 
+  size_t arena_size_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
-  //static tflite::MicroAllocator* allocator_;
+
+  // static tflite::MicroAllocator* allocator_;
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
