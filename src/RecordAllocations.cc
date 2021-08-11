@@ -179,8 +179,6 @@ void tflmc::RecordAllocations(
   TfLiteEvalTensor *eval_tensors=nullptr;
   
   tflite::SubgraphAllocations *subgraph_allocations = allocator->StartModelAllocation(model);
-  std::cout<<__FILE__<<" "<<__LINE__<<" "<<__PRETTY_FUNCTION__<<"\n";  
-  
     
   g_allocator = allocator;
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
