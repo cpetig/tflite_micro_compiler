@@ -108,11 +108,6 @@ ELSEIF(EXISTS ${TFLMD_SRC}/ruy)
     LIST(APPEND TFL_INC_DIRS ${TFLMD_SRC}/ruy)
 ENDIF()
 
-# SET(CUSTOM_QUANT_SRC ${TFL_SRC}/experimental/custom_quantization_util.cc)
-# IF(EXISTS ${CUSTOM_QUANT_SRC})
-#     SET(TFL_OPT_SRCS ${CUSTOM_QUANT_SRC})
-# ENDIF()
-
 LIST(APPEND TFL_INC_DIRS 
     ${TF_SRC}
     )
