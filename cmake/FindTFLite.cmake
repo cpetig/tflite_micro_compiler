@@ -174,6 +174,10 @@ FILE(GLOB TFL_MEM_PLANNER_SRCS
     ${TFLM_SRC}/memory_planner/*.cc
     )
 
+FILE(GLOB TFL_ARENA_ALLOCATOR_SRCS
+    ${TFLM_SRC}/arena_allocator/*.cc
+    )
+
 SET(TFL_SRCS 
     ${TFL_ROOT_SRCS}
     ${TFL_KERNELS_SRCS}
@@ -181,6 +185,7 @@ SET(TFL_SRCS
     ${TFL_CORE_API_SRCS}
     ${TFL_C_SRCS}
     ${TFL_MEM_PLANNER_SRCS}
+    ${TFL_ARENA_ALLOCATOR_SRCS}
     ${TFL_OPT_SRCS}
     )
 
