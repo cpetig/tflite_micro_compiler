@@ -132,22 +132,6 @@ FILE(GLOB TFL_KERNELS_SRCS
     ${TFLM_SRC}/kernels/kernel_util.cc
     )
 
-# These ones carry an unwanted dependecy (TODO: Fix)
-FILE(GLOB TFL_KERNELS_TO_REMOVE
-    # ${TFLM_SRC}/kernels/depth_to_space.cc
-    # ${TFLM_SRC}/kernels/space_to_depth.cc
-    # ${TFLM_SRC}/kernels/gather.cc
-    # ${TFLM_SRC}/kernels/transpose.cc
-    # ${TFLM_SRC}/kernels/floor_mod.cc
-    # ${TFLM_SRC}/kernels/floor_div.cc
-    )
-FOREACH(src ${TFL_KERNELS_TO_REMOVE})
-    LIST(FIND TFL_KERNELS_SRCS ${src} TFL_KERNELS_SRCS_FOUND_INDEX)
-    IF(${TFL_KERNELS_SRCS_FOUND_INDEX} GREATER_EQUAL 0)
-        LIST(REMOVE_ITEM TFL_KERNELS_SRCS ${src})
-    ENDIF()
-ENDFOREACH()
-
 IF(TFLM_EXTRA_KERNELS)
     FILE(GLOB TFL_EXTRA_KERNEL_SRCS
 	    ${TFLM_SRC}/kernels/${TFLM_EXTRA_KERNELS}/*.cc
@@ -190,7 +174,6 @@ SET(TFL_SRCS
     ${TFL_OPT_SRCS}
     )
 
-MESSAGE(STATUS "TFL_SRCS=${TFL_SRCS}")
 
 LIST(FILTER TFL_SRCS EXCLUDE REGEX "([a-z0-9_]+_test.cc)$")
 
