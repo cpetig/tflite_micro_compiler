@@ -7,12 +7,18 @@ IF(TF_RECACHE)
 ENDIF()
 
 IF(NOT TF_SRC)
+
+    IF(TF_URL)
+        SET(TF_REPO ${TF_URL})
+    ELSE()
+        SET(TF_REPO https://github.com/tensorflow/tflite-micro.git)
+    ENDIF()
     INCLUDE(FetchContent)
     IF(TF_TAG)
         MESSAGE(STATUS "Getting TF tag '${TF_TAG}' and not master")
         FetchContent_Declare(
             tf 
-            GIT_REPOSITORY https://github.com/tensorflow/tflite-micro.git
+            GIT_REPOSITORY ${TF_REPO}
             GIT_PROGRESS FALSE
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             GIT_TAG ${TF_TAG}
@@ -22,7 +28,7 @@ IF(NOT TF_SRC)
         MESSAGE(STATUS "Getting TF commit '${TF_COMMIT}' and not master")
         FetchContent_Declare(
             tf
-            GIT_REPOSITORY https://github.com/tensorflow/tflite-micro.git
+            GIT_REPOSITORY ${TF_REPO}
             GIT_PROGRESS FALSE
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             GIT_TAG ${TF_COMMIT}
@@ -31,7 +37,7 @@ IF(NOT TF_SRC)
     ELSE()
         FetchContent_Declare(
             tf 
-            GIT_REPOSITORY https://github.com/tensorflow/tflite-micro.git
+            GIT_REPOSITORY ${TF_REPO}
             GIT_PROGRESS FALSE
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             GIT_TAG main
