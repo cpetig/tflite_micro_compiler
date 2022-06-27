@@ -1100,6 +1100,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/compatibility.h"
 #include "tensorflow/lite/micro/micro_context.h"
 #if LOG_OP_INPUTS
