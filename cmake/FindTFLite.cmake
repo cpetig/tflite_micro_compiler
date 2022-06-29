@@ -53,8 +53,9 @@ IF(NOT TF_SRC)
 
     FetchContent_Declare(
         flatbuffers 
-        GIT_REPOSITORY https://github.com/google/flatbuffers.git 
+        GIT_REPOSITORY https://github.com/google/flatbuffers.git
         GIT_PROGRESS FALSE 
+        GIT_TAG f28c2b29364970e23c8ba3d751ca188f8a08c71e
         QUIET
         )
     FetchContent_GetProperties(flatbuffers)
