@@ -144,12 +144,18 @@ IF(EXISTS ${TFL_SRC}/schema/schema_utils.cc)
     LIST(APPEND TFL_ROOT_SRCS ${TFL_SRC}/schema/schema_utils.cc)
 ENDIF()
 
-FILE(GLOB TFL_KERNELS_SRCS
+FILE(GLOB TFLM_REFERENCE_KERNEL_SRCS
     ${TFLM_SRC}/kernels/*.cc 
     ${TFL_SRC}/kernels/internal/quantization_util.cc 
     ${TFL_SRC}/kernels/kernel_util.cc
     ${TFLM_SRC}/kernels/kernel_util.cc
     )
+
+
+# Remove broken kernel
+IF(EXISTS ${TFLM_SRC}/kernels/unidirectional_sequence_lstm.cc)
+    LIST(REMOVE_ITEM TFLM_REFERENCE_KERNEL_SRCS ${TFLM_SRC}/kernels/unidirectional_sequence_lstm.cc)
+ENDIF()
 
 FOREACH(src ${TFLM_EXTRA_KERNEL_SRCS})
     GET_FILENAME_COMPONENT(src_name ${src} NAME)
@@ -183,7 +189,7 @@ FILE(GLOB TFL_ARENA_ALLOCATOR_SRCS
 
 SET(TFL_SRCS 
     ${TFL_ROOT_SRCS}
-    ${TFL_KERNELS_SRCS}
+    ${TFLM_REFERENCE_KERNEL_SRCS}
     ${TFL_EXTRA_KERNEL_SRCS}
     ${TFL_CORE_API_SRCS}
     ${TFL_C_SRCS}
