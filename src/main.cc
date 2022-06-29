@@ -2,7 +2,9 @@
 #include "Compiler.h"
 #include "Options.h"
 
-#define LOG_ARGC_ARGV 1
+#ifndef LOG_ARGC_ARGV
+#define LOG_ARGC_ARGV 0
+#endif  // LOG_ARGC_ARGV
 
 
 /** The "real" main - physical main has workarounds for various
