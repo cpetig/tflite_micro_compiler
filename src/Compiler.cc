@@ -912,11 +912,15 @@ void tflmc::Compiler::writeInitSource(CodeWriter &wr) {
       TfLiteAffineQuantization const* quant = ((TfLiteAffineQuantization const*)(tensorData[i].quantization.params));
       tflTensors[i].params.scale = quant->scale->data[0];
       tflTensors[i].params.zero_point = quant->zero_point->data[0];
-    } else if (tflTensors[i].quantization.type == kTfLitePackedAffineQuantization) {
+)";
+#if SUPPORT_CUSTOM_QUANT
+    wr << R"(    } else if (tflTensors[i].quantization.type == kTfLitePackedAffineQuantization) {
       TfLitePackedAffineQuantization const* quant = (TfLitePackedAffineQuantization const*)(tensorData[i].quantization.params);
       tflTensors[i].params.scale = quant->affine.scale->data[0];
       tflTensors[i].params.zero_point = quant->affine.zero_point->data[0];
-    }
+)";
+#endif  // SUPPORT_CUSTOM_QUANT
+    wr << R"(    }
 )";
   } else {
     wr << "    tflTensors[i].quantization.type = kTfLiteNoQuantization;\n";
