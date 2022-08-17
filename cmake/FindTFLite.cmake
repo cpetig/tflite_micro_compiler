@@ -17,7 +17,7 @@ IF(NOT TF_SRC)
     IF(TF_TAG)
         MESSAGE(STATUS "Getting TF tag '${TF_TAG}' and not master")
         FetchContent_Declare(
-            tf 
+            tf
             GIT_REPOSITORY ${TF_REPO}
             GIT_PROGRESS FALSE
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
@@ -36,7 +36,7 @@ IF(NOT TF_SRC)
             )
     ELSE()
         FetchContent_Declare(
-            tf 
+            tf
             GIT_REPOSITORY ${TF_REPO}
             GIT_PROGRESS FALSE
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
@@ -52,9 +52,9 @@ IF(NOT TF_SRC)
     SET(TF_SRC ${tf_SOURCE_DIR})
 
     FetchContent_Declare(
-        flatbuffers 
+        flatbuffers
         GIT_REPOSITORY https://github.com/google/flatbuffers.git
-        GIT_PROGRESS FALSE 
+        GIT_PROGRESS FALSE
         GIT_TAG f28c2b29364970e23c8ba3d751ca188f8a08c71e
         QUIET
         )
@@ -66,10 +66,10 @@ IF(NOT TF_SRC)
     LIST(APPEND TFL_INC_DIRS ${flatbuffers_SOURCE_DIR}/include)
 
     FetchContent_Declare(
-        fixedpoint 
-        GIT_REPOSITORY https://github.com/google/gemmlowp.git 
-        GIT_PROGRESS FALSE 
-        QUIET 
+        fixedpoint
+        GIT_REPOSITORY https://github.com/google/gemmlowp.git
+        GIT_PROGRESS FALSE
+        QUIET
         )
     FetchContent_GetProperties(fixedpoint)
     IF(NOT fixedpoint_POPULATED)
@@ -79,10 +79,10 @@ IF(NOT TF_SRC)
     LIST(APPEND TFL_INC_DIRS ${fixedpoint_SOURCE_DIR})
 
     FetchContent_Declare(
-        ruy 
-        GIT_REPOSITORY https://github.com/google/ruy.git 
-        GIT_PROGRESS FALSE 
-        QUIET 
+        ruy
+        GIT_REPOSITORY https://github.com/google/ruy.git
+        GIT_PROGRESS FALSE
+        QUIET
         )
     FetchContent_GetProperties(ruy)
     IF(NOT ruy_POPULATED)
@@ -132,12 +132,12 @@ ELSEIF(EXISTS ${TFLMD_SRC}/ruy)
     LIST(APPEND TFL_INC_DIRS ${TFLMD_SRC}/ruy)
 ENDIF()
 
-LIST(APPEND TFL_INC_DIRS 
+LIST(APPEND TFL_INC_DIRS
     ${TF_SRC}
     )
 
 FILE(GLOB TFL_ROOT_SRCS
-    ${TFLM_SRC}/*.cc 
+    ${TFLM_SRC}/*.cc
     )
 # schema_utils.cc only exists for newer TF versions
 IF(EXISTS ${TFL_SRC}/schema/schema_utils.cc)
@@ -145,8 +145,8 @@ IF(EXISTS ${TFL_SRC}/schema/schema_utils.cc)
 ENDIF()
 
 FILE(GLOB TFLM_REFERENCE_KERNEL_SRCS
-    ${TFLM_SRC}/kernels/*.cc 
-    ${TFL_SRC}/kernels/internal/quantization_util.cc 
+    ${TFLM_SRC}/kernels/*.cc
+    ${TFL_SRC}/kernels/internal/quantization_util.cc
     ${TFL_SRC}/kernels/kernel_util.cc
     ${TFLM_SRC}/kernels/kernel_util.cc
     )
@@ -172,7 +172,7 @@ FOREACH(src ${TFLM_EXTRA_KERNEL_SRCS})
 ENDFOREACH()
 
 FILE(GLOB TFL_CORE_API_SRCS
-    ${TFL_SRC}/core/api/*.cc 
+    ${TFL_SRC}/core/api/*.cc
     )
 
 FILE(GLOB TFL_C_SRCS
@@ -187,10 +187,10 @@ FILE(GLOB TFL_ARENA_ALLOCATOR_SRCS
     ${TFLM_SRC}/arena_allocator/*.cc
     )
 
-SET(TFL_SRCS 
+SET(TFL_SRCS
     ${TFL_ROOT_SRCS}
     ${TFLM_REFERENCE_KERNEL_SRCS}
-    ${TFL_EXTRA_KERNEL_SRCS}
+    ${TFLM_EXTRA_KERNEL_SRCS}
     ${TFL_CORE_API_SRCS}
     ${TFL_C_SRCS}
     ${TFL_MEM_PLANNER_SRCS}
@@ -244,11 +244,11 @@ IF(RECORD_STATIC_KERNELS)
     )
 ENDIF()
 
-SET(TFLite_INCLUDE_DIRS 
+SET(TFLite_INCLUDE_DIRS
     ${TFL_INC_DIRS}
     )
 
-SET(TFLite_SOURCES 
+SET(TFLite_SOURCES
     ${TFL_SRCS}
     )
 
