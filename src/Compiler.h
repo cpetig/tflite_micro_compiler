@@ -4,12 +4,15 @@
 #include <iostream>
 
 #include "MemMap.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
 namespace tflmc {
+
+class CodeWriter;
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
@@ -27,15 +30,35 @@ class Compiler {
   // Returns a name that describes a tensors relation to network layers.
   std::string getTensorName(int tensorIndex) const;
 
+  bool noErrorsReported() const;
+
  private:
   bool init(const void *modelData);
   tflite::ErrorReporter &errReporter() { return microErrReporter_; }
 
+  void writeCustomRegistrationsSource(CodeWriter &wr);
+
+  void writeTflNodesSource(CodeWriter &wr);
+
+  void writeTensorDataSource(CodeWriter &wr);
+
+  void writeTypesAndWorkingArraysSource(CodeWriter &wr);
+
+  void writeNodeDataSource(CodeWriter &wr);
+
+  void writeScratchBufferOffsets(CodeWriter &wr);
+
+  void writeContextAllocationHandlersSource(CodeWriter &wr);
+
+  void writeInitSource(CodeWriter &wr);
+
+  void writeTensorAccessorsSource(CodeWriter &wr);
+
+  void writeInvokeSource(CodeWriter &wr);
+
  private:
   struct TensorInfo {
-    TensorInfo(const TfLiteTensor *tensor_ptr) :
-      tensor(tensor_ptr)
-    {}
+    TensorInfo(const TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
@@ -52,10 +75,8 @@ class Compiler {
   };
   struct NodeInfo {
     NodeInfo() {}
-    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index) :
-      node(tfl_node),
-      regIndex(reg_index)
-    {}
+    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index)
+        : node(tfl_node), regIndex(reg_index) {}
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
@@ -74,16 +95,36 @@ class Compiler {
   };
 
  private:
+  /**
+   * @brief Error reporter that tracks if Error was reported.
+   *
+   */
+  class TrackingErrorReporter : public tflite::ErrorReporter {
+   public:
+    ~TrackingErrorReporter() {}
+    int Report(const char *format, va_list args) override;
+
+    bool getErrorReported() const { return error_reported_; }
+
+   private:
+    bool error_reported_ = false;
+  };
+
   std::string prefix_;
-  tflite::MicroErrorReporter microErrReporter_;
+  TrackingErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
   tflite::AllOpsResolver resolver_;
-  std::vector<uint8_t> arena_buf_;
+  SufficientArena arena_;
+  uint8_t *aligned_arena_start_;
+  size_t arena_size_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
+
+  // static tflite::MicroAllocator* allocator_;
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
+  size_t scratchBuffersAllocated_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;

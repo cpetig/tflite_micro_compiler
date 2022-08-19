@@ -5,41 +5,53 @@
 
 #include "TypeToString.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/core/api/error_reporter.h"
 
 namespace {
 
 class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
  public:
+
   void* Allocate(size_t size, size_t alignment_hint) override {
     lastAllocSize = size;
-    return malloc(size);
+    allocated_blocks.push_back(std::make_unique<uint8_t []>(size));
+    return reinterpret_cast<void *>(allocated_blocks.back().get());
   }
-  void Deallocate(void* data) override { free(data); }
+
+  void Deallocate(void* data) override {
+  }
+
+
   size_t GetLastAllocSize() { return lastAllocSize; }
 
  private:
+  std::vector<std::unique_ptr<uint8_t []>>  allocated_blocks;
   size_t lastAllocSize = 0;
 };
+
+
 size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
-                          const tflite::SubGraph* subgraph) {
+                          const tflite::SubGraph* subgraph,
+                          tflite::ErrorReporter &errReporter) {
   // There seems to be no simple query function for this, so tickle the
   // information out of the parse function.
   auto dummyOp = subgraph->operators()->Get(0);
-  tflite::MicroErrorReporter errReporter;
   AllocatorToGetLastAllocSize allocator;
   void* outData = nullptr;
-  if (tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
-                          &outData) == kTfLiteOk)
-    free(outData);
+  (void)tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
+                          &outData);
   return allocator.GetLastAllocSize();
 }
 
 }  // namespace
 
 tflmc::CodeWriter::CodeWriter(std::ostream& out,
-                              const tflite::SubGraph* subgraph)
-    : out_(out), subgraph_(subgraph) {
+                              const tflite::SubGraph* subgraph,
+                              tflite::ErrorReporter &err_reporter
+                              )
+    : out_(out), subgraph_(subgraph)
+    , err_reporter_(err_reporter) 
+{
   // Setup stream: Print booleans as string:
   out_ << std::boolalpha;
   // Print floats with precision that is sufficient for exact back-conversion:
@@ -131,7 +143,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       out_ << p->axis << ", " << to_string(p->activation) << " };";
     } break;
     default: {
-      size_t datalen = GetBuiltinDataSize(op, subgraph_);
+      size_t datalen = GetBuiltinDataSize(op, subgraph_, err_reporter_);
       uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
       out_ << "ALIGN(" << alignment << ") uint8_t " << name << "[" << datalen
            << "] = { ";
@@ -144,15 +156,26 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
   out_ << '\n';
 }
 
+template<class TFArray>
+void writeTfArray( std::ostream &os, const TFArray *tfarray, const std::string &name, const char * suffix, const char *data_type_id)
+{
+    os << "const TfArray<" 
+          << tfarray->size << ", " 
+          << data_type_id << "> " 
+       << name << suffix
+       << " = { " << tfarray->size << ", { ";
+    for (int i = 0; i < tfarray->size; i++) {
+      os << tfarray->data[i] << ", ";
+    }
+    os << "} };\n";
+}
+
 void tflmc::CodeWriter::writeIntArray(const TfLiteIntArray& arr,
                                       const std::string& name) {
   if (arr.size == 0) {
     out_ << "const int " << name << " = 0; /* empty TfLiteIntArray */\n";
   } else {
-    out_ << "const TfArray<" << arr.size << ", int> " << name << " = { "
-         << arr.size << ", { ";
-    writeIntArrayData(arr);
-    out_ << " } };\n";
+    writeTfArray(out_, &arr, name, "", "int");
   }
 }
 
@@ -204,7 +227,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   out_ << "] = { ";
   if (t.dims->size == 1 || serialized_elts != nominal_elts) {
     // one dimension/packed: 10 per line of data
-    for (int i = 0; i < serialized_elts; ++i) {
+    for (size_t i = 0; i < serialized_elts; ++i) {
       if (i % 10 == 0) out_ << "\n    ";
       out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
     }
@@ -280,20 +303,15 @@ void tflmc::CodeWriter::writeTensor(const TfLiteTensor& t,
   }
 }
 
+
+
 void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
                                           const std::string& name) {
+
   if (q.type == kTfLiteAffineQuantization) {
     auto aq = (TfLiteAffineQuantization const*)q.params;
-    out_ << "const TfArray<" << aq->scale->size << ", float> " << name
-         << "_scale = { " << aq->scale->size << ", { ";
-    for (int i = 0; i < aq->scale->size; i++) {
-      out_ << aq->scale->data[i] << ", ";
-    }
-    out_ << "} };\n";
-    out_ << "const TfArray<" << aq->zero_point->size << ", int> " << name
-         << "_zero = { " << aq->zero_point->size << ", { ";
-    writeIntArrayData(*aq->zero_point);
-    out_ << " } };\n";
+    writeTfArray(out_, aq->scale, name, "_scale", "float");
+    writeTfArray(out_,  aq->zero_point, name, "_zero", "int");
     out_ << "const TfLiteAffineQuantization " << name << " = { "
          << "(TfLiteFloatArray*)&" << name << "_scale, "
          << "(TfLiteIntArray*)&" << name << "_zero, " << aq->quantized_dimension
@@ -301,7 +319,7 @@ void tflmc::CodeWriter::writeQuantization(const TfLiteQuantization& q,
   }
 }
 
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION >= 100
 void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
                                                  const std::string& name) {
   if (q.details.type == kTfLiteSub8BitPackedUniformDetail) {
@@ -310,6 +328,9 @@ void tflmc::CodeWriter::writeQuantizationDetails(const TfLiteQuantization& q,
     out_ << static_cast<unsigned>(sub8_details->bits_per_item) << ", ";
     out_ << static_cast<unsigned>(sub8_details->container_bits) << ", ";
     out_ << static_cast<unsigned>(sub8_details->packed_minor_dims) << ", ";
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION >= 110
+    out_ << static_cast<unsigned>(sub8_details->sparsity_coding) << ", ";
+#endif
     out_ << "{}";
     out_ << "};\n";
   }

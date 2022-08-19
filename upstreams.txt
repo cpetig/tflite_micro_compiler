@@ -1,0 +1,1 @@
+https://github.com/cpetig/tflite_micro_compiler.git

@@ -31,8 +31,9 @@ IF(NOT TF_SRC)
     ELSE()
         FetchContent_Declare(
             tf 
-            GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
+            GIT_REPOSITORY https://github.com/tensorflow/tflite-micro.git
             GIT_PROGRESS FALSE
+            GIT_TAG main
             GIT_REMOTE_UPDATE_STRATEGY REBASE_CHECKOUT
             QUIET
             )
@@ -100,6 +101,10 @@ LIST(APPEND TFL_INC_DIRS
     ${TF_SRC}
     )
 
+FILE(GLOB FLATBUFFERS_UTIL_SRC
+    ${flatbuffers_SOURCE_DIR}/src/util.cpp
+    )
+
 FILE(GLOB TFL_ROOT_SRCS
     ${TFLM_SRC}/*.cc 
     )
@@ -122,12 +127,18 @@ FILE(GLOB TFL_MEM_PLANNER_SRCS
     ${TFLM_SRC}/memory_planner/*.cc
     )
 
+FILE(GLOB TFL_SCHEMA
+    ${TFL_SRC}/schema/*.cc
+    )
+
 SET(TFL_SRCS 
     ${TFL_ROOT_SRCS}
     ${TFL_KERNELS_SRCS}
     ${TFL_CORE_API_SRCS}
     ${TFL_C_SRCS}
     ${TFL_MEM_PLANNER_SRCS}
+    ${TFL_SCHEMA}
+    ${FLATBUFFERS_UTIL_SRC}
     )
 
 LIST(FILTER TFL_SRCS EXCLUDE REGEX "([a-z0-9_]+_test.cc)$")

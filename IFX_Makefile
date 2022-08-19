@@ -1,0 +1,151 @@
+
+include ../scripts/GET_PROJECT_SETTINGS.mk
+
+
+
+
+INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
+
+COMPILED_FILES_SELECTION ?= generated
+
+LOCAL_CPPFLAGS := -DTFLMC_USE_INTERPRETER_HOOKS
+
+# The actual tflite(u) Makefile!!
+
+//TFLITE_U_FROM_SRC=1
+ifdef TFLITE_U_FROM_SRC
+$(info Buld from working-copy source...)
+INSTALLED_TFLITE_MICRO=$(abspath ../tflite_u)
+TFLITE_U_PATH=$(INSTALLED_TFLITE_MICRO)/
+include $(TFLITE_U_PATH)tensorflow/lite/micro/tools/make/Makefile
+else
+$(info Buld from installed tflite_u...)
+INSTALLED_TFLITE_MICRO=$(IFX_TOOLSPREFIX)/tflite_u-$(IFX_TFLITE_MICRO_VERSION)
+include $(INSTALLED_TFLITE_MICRO)/tools/make/Makefile
+endif
+
+
+HOST_MAKE_ARGS = -f IFX_Makefile TARGET=$(HOST_OS) TARGET_ARCH=$(HOST_ARCH)
+LOCAL_CLEANS = examples/generated
+
+
+ifeq ($(OS),Windows_NT)
+    EXE_SUFFIX=.exe
+endif
+ifeq ($(TARGET),linux)
+	LOCAL_LDFLAGS=-ldl
+endif
+
+
+EXAMPLE_NETS:=hello_world cifar10 mobilenet hello_world_5 hello_world_pruned_8
+CONV_ONLY_EXAMPLE_NETS:=argmax
+EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)  )
+COMPILED_EXAMPLES:=$(foreach e, $(EXAMPLE_NETS), $(e)_compiled )
+
+TFLITE_U_FROM_SRC=$(TFLITE_U_FROM_SRC)
+
+BASE_TAGS := ifx_fast_rival
+COMPILER_TAGS := $(BASE_TAGS)
+EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
+COMPILED_EXAMPLES_TAGS := $(BASE_TAGS) $(TARGET_TAGS)
+
+ifndef RUNTIME_KERNEL_VARIANT_SELECTION
+COMPILER_TAGS += record_model
+COMPILED_EXAMPLES_TAGS += recorded_model
+endif
+
+#
+# Set FOOTPRINT_ONLY to compare memory footprints of models (logging and test stimulus/checks not compiled)
+ifdef FOOTPRINT_ONLY
+EXAMPLES_SETTINGS := LOCAL_CXXFLAGS=-DTF_LITE_MICRO_FOOTPRINT_ONLY
+endif
+
+ifeq ($(TARGET),windows)
+  TEST_RUNNER :=
+else ifeq ($(TARGET),linux)
+  TEST_RUNNER :=
+else
+  TEST_RUNNER := $(TEST_SCRIPT) --no-check
+endif
+
+#
+# Nasty... this depends on internals of the tflite(u) Makefile...
+HOST_COMPILER_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILER_TAGS) $(HOST_OS) $(HOST_ARCH)  $(TOOLCHAIN))_debug
+EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH) $(TOOLCHAIN))$(BUILD_SUFFIX)
+COMPILED_EXAMPLES_GENDIR := $(GENROOT_DIR)/$(call underscore_seperated,$(COMPILED_EXAMPLES_TAGS) $(TARGET) $(TARGET_ARCH) $(TOOLCHAIN))$(BUILD_SUFFIX)
+
+HOST_COMPILER:=$(HOST_COMPILER_GENDIR)/bin/compiler$(EXE_SUFFIX)
+
+
+.PHONY: examples run_examples regenerate regenerate_examples build_compiler native_compiler
+.PHONY: clean_examples mrproper
+
+build_compiler:
+	$(MAKE) $(HOST_MAKE_ARGS) TAGS="$(COMPILER_TAGS)" BUILD_TYPE=debug compiler
+
+regenerate: build_compiler
+	make $(HOST_MAKE_ARGS) regenerate_examples
+
+examples:  regenerate
+	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_examples
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) build_compiled_examples
+
+examples_fpga: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+	
+examples_fpga_mac_nostream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_rival_non_streaming" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled # build_compiled_examples
+
+examples_fpga_mac_stream: regenerate
+	$(warning WARNING: Some examples won't compile due to limited prom and ram on the fpga)es
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS) ifx_strm_rival" TARGET=ifx_riscv TARGET_ARCH=rival2_fpga BUILD_TYPE=debug hello_world_compiled 
+	
+
+examples_footprint:
+	$(MAKE) -f IFX_Makefile clean_examples
+	$(MAKE) -f IFX_Makefile FOOTPRINT_ONLY=1 BUILD_TYPE=release footprints
+
+footprints: examples
+	set -e ; \
+	for f in $(EXAMPLES); do \
+	  nm --print-size --size-sort --radix=d $(EXAMPLES_GENDIR)/bin/$${f}  \
+	  | cut -f 2- -d ' '> $${f}_sizes.txt; \
+	done
+	set -e ; \
+	for f in $(COMPILED_EXAMPLES); do \
+	  nm --print-size --size-sort --radix=d  $(COMPILED_EXAMPLES_GENDIR)/bin/$${f} \
+	  | cut -f 2- -d ' '> $${f}_sizes.txt; \
+	done
+	size $(EXAMPLES_GENDIR)/bin/* $(COMPILED_EXAMPLES_GENDIR)/bin/*
+
+build_examples: $(EXAMPLES)
+ 
+build_compiled_examples: $(COMPILED_EXAMPLES)
+
+run_examples:  examples 
+	set -e ; for f in $(EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(EXAMPLES_GENDIR)/bin/$${f}; done
+	set -e ; for f in $(COMPILED_EXAMPLES); do echo $${f}; $(TEST_RUNNER) $(COMPILED_EXAMPLES_GENDIR)/bin/$${f}; done
+
+COMPILED_MODELS = $(foreach n, $(EXAMPLE_NETS) $(CONV_ONLY_EXAMPLE_NETS), examples/generated/compiled_$(n).cc)
+
+regenerate_examples: $(COMPILED_MODELS) 
+	
+examples/generated/compiled_%.cc: examples/%.tflite $(HOST_COMPILER)
+	@mkdir -p examples/generated
+	$(HOST_COMPILER) $< $@  $*_
+
+
+install: build_compiler
+	mkdir -p "$(INSTALLED_TFLITE_MICRO)"/bin
+	cp -a $(HOST_COMPILER) "$(INSTALLED_TFLITE_MICRO)"/bin/tfl_u_compiler$(EXE_SUFFIX)
+
+clean_examples:
+	$(MAKE) -f IFX_Makefile TAGS="$(EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) clean
+	$(MAKE) -f IFX_Makefile TAGS="$(COMPILED_EXAMPLES_TAGS)" $(EXAMPLES_SETTINGS) clean
+
+mrproper:
+	rm -rf $(GENROOT_DIR) examples/generated/*
+
+

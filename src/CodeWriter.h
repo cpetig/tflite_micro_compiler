@@ -3,15 +3,16 @@
 
 #include <iostream>
 
+#include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/version.h"
 
 namespace tflmc {
 
 // Helper functions for top-level code generation.
 class CodeWriter {
  public:
-  CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph);
+  CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph,
+             tflite::ErrorReporter &errReporter);
 
   void writeBuiltin(tflite::BuiltinOperator op, const void *data,
                     const std::string &name);
@@ -25,7 +26,7 @@ class CodeWriter {
 
   void writeQuantization(const TfLiteQuantization &q, const std::string &name);
 
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION == 100
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION >= 100
   void writeQuantizationDetails(const TfLiteQuantization &q,
                                 const std::string &name);
 #endif
@@ -39,6 +40,7 @@ class CodeWriter {
  private:
   std::ostream &out_;
   const tflite::SubGraph *subgraph_ = nullptr;
+  tflite::ErrorReporter &err_reporter_;
 };
 
 }  // namespace tflmc

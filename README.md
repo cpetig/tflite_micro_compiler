@@ -29,6 +29,9 @@ make
 The examples cmake [here](examples/CMakeLists.txt) is by default not included due to issues with TensorFlow source code compatibility when using specific code versions.
 To enable building the examples pass `-DTF_EXAMPLES=ON` to CMake.
 
+The version of the quantized mobilenet .tflite used is 1.0.25.160-quantized.
+
+
 ## Automatic TensorFlow Source Fetching
 
 To pull the TensorFlow sources using CMake with the variable `GET_TF_SRC`

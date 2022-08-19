@@ -28,7 +28,11 @@ cifar10: cifar10_model.o truck.o cifar10.o
 cifar10_compiled: truck.o compiled_cifar10.o cifar10_run_comp.o
 	$(CXX) -o $@ $^ $(LDOPTS) $(LIBS)
 
+lstm_compiled: lstm_test.o lstm_compiled.o
+	$(CXX) -o $@ $^ ${LIBS}
+
 regenerate: ../compiler
-	../compiler hello_world.tflite compiled_hello_world.cc hello_ 
-	../compiler mobilenet_v1_0_25_160_quantized.tflite compiled_mobilenet.cc mobilenet_
-	../compiler cifar10.tflite compiled_cifar10.cc cifar_
+	../compiler hello_world.tflite compiled_hello.cpp hello_ 
+	../compiler mobilenet_v1_0_25_160_quantized.tflite compiled_mobilenet.cpp mobilenet_
+	../compiler cifar10.tflite cifar10_compiled.cc cifar_
+	../compiler lstm2.tflite lstm_compiled.cc lstm_

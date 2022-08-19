@@ -4,3 +4,15 @@ hello_world
 hello_world_compiled
 compiler
 build*/
+.cproject
+.project
+.settings/
+.vscode
+ALL_TESTS_*.log
+*_sizes.txt
+gen/
+gdb.txt
+examples/generated/
+projectsmtbMicroAIlof.log
+short_cut_tflite_u.mk
+tflite_u/

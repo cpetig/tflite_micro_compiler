@@ -1,4 +1,4 @@
-$(info Adding tflite-micro compiler)
+
 TFLITE_U_COMPILER_SRCS := \
   src/CodeWriter.cc  src/CustomOperators.cc src/MemMap.cc src/TypeToString.cc \
   src/Compiler.cc  src/main.cc src/RecordAllocations.cc
