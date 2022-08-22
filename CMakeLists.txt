@@ -45,7 +45,6 @@ SET(COMPILER_HEADERS
     ${PROJECT_SOURCE_DIR}/src/Compiler.h
     ${PROJECT_SOURCE_DIR}/src/CustomOperators.h
     ${PROJECT_SOURCE_DIR}/src/MemMap.h
-    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.h
     ${PROJECT_SOURCE_DIR}/src/TypeToString.h
     )
 
@@ -54,7 +53,6 @@ SET(COMPILER_SRCS
     ${PROJECT_SOURCE_DIR}/src/Compiler.cc
     ${PROJECT_SOURCE_DIR}/src/CustomOperators.cc
     ${PROJECT_SOURCE_DIR}/src/MemMap.cc
-    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cc
     ${PROJECT_SOURCE_DIR}/src/TypeToString.cc
     ${PROJECT_SOURCE_DIR}/src/main.cc
     )

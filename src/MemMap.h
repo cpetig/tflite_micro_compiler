@@ -1,9 +1,9 @@
 #ifndef TFLMCOMPILER_MEMMAP_H
 #define TFLMCOMPILER_MEMMAP_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
-#include <cstddef>
 
 namespace tflmc {
 
