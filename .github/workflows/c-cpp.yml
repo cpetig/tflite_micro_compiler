@@ -17,6 +17,7 @@ jobs:
     - name: Requirements
       shell: bash
       run: |
+        pip install pillow
         cd ..
         git clone https://github.com/tensorflow/tflite-micro.git tensorflow
         cd tensorflow
