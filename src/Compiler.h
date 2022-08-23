@@ -1,15 +1,25 @@
 #ifndef TFLMCOMPILER_COMPILER_H
 #define TFLMCOMPILER_COMPILER_H
 
-#include <iostream>
-
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#undef private
 #include "tensorflow/lite/schema/schema_generated.h"
 
 namespace tflmc {
+
+struct Allocation {
+  ptrdiff_t offset;
+  size_t len;
+  int nodeIndex;
+};
+
+TfLiteStatus AllocateTensors(
+    std::unique_ptr<tflite::MicroInterpreter> &interpreter);
+TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i);
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
@@ -33,9 +43,7 @@ class Compiler {
 
  private:
   struct TensorInfo {
-    TensorInfo(const TfLiteTensor *tensor_ptr) :
-      tensor(tensor_ptr)
-    {}
+    TensorInfo(const TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
@@ -52,10 +60,8 @@ class Compiler {
   };
   struct NodeInfo {
     NodeInfo() {}
-    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index) :
-      node(tfl_node),
-      regIndex(reg_index)
-    {}
+    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index)
+        : node(tfl_node), regIndex(reg_index) {}
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
@@ -89,8 +95,10 @@ class Compiler {
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+  std::vector<int32_t> scratchBufferOffsets;
 
   bool has_custom_ops = false;
+  bool has_tflite_custom_ops = false;
   bool has_quantization = false;
   Option<TfLiteType> common_tensor_type;
   Option<bool> common_tensor_is_variable;

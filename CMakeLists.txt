@@ -21,9 +21,9 @@ IF(NOT GET_TF_SRC)
             ${TFLMD_SRC}/ruy
         )
         IF(WIN32)
-            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib/libtensorflow-microlite.a)
+            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/windows_x86_64_default/lib/libtensorflow-microlite.a)
         ELSE()
-            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/linux_x86_64/lib/libtensorflow-microlite.a)
+            SET(TF_LIB ${TFLM_SRC}/tools/make/gen/linux_x86_64_default/lib/libtensorflow-microlite.a)
         ENDIF()
     ELSE()
         MESSAGE(FATAL_ERROR "\
@@ -45,7 +45,6 @@ SET(COMPILER_HEADERS
     ${PROJECT_SOURCE_DIR}/src/Compiler.h
     ${PROJECT_SOURCE_DIR}/src/CustomOperators.h
     ${PROJECT_SOURCE_DIR}/src/MemMap.h
-    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.h
     ${PROJECT_SOURCE_DIR}/src/TypeToString.h
     )
 
@@ -54,7 +53,6 @@ SET(COMPILER_SRCS
     ${PROJECT_SOURCE_DIR}/src/Compiler.cc
     ${PROJECT_SOURCE_DIR}/src/CustomOperators.cc
     ${PROJECT_SOURCE_DIR}/src/MemMap.cc
-    ${PROJECT_SOURCE_DIR}/src/RecordAllocations.cc
     ${PROJECT_SOURCE_DIR}/src/TypeToString.cc
     ${PROJECT_SOURCE_DIR}/src/main.cc
     )

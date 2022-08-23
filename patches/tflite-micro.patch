@@ -1,0 +1,52 @@
+diff --git a/tensorflow/lite/micro/micro_context.h b/tensorflow/lite/micro/micro_context.h
+index e7be654..2693ff2 100644
+--- a/tensorflow/lite/micro/micro_context.h
++++ b/tensorflow/lite/micro/micro_context.h
+@@ -20,6 +20,22 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_allocator.h"
+ #include "tensorflow/lite/micro/micro_graph.h"
+ 
++#ifdef NO_INTERPRETER
++
++namespace tflite {
++  struct MicroContext{
++      TfLiteTensor* (*AllocateTempInputTensor)(const TfLiteNode* node, int index);
++      TfLiteTensor* (*AllocateTempOutputTensor)(const TfLiteNode* node, int index);
++      void (*DeallocateTempTfLiteTensor)(TfLiteTensor* tensor);
++      void* (*external_context)();
++  };
++  static inline MicroContext* GetMicroContext(const struct TfLiteContext* context){
++      return reinterpret_cast<MicroContext*>(context->impl_);
++  }
++}
++
++#else
++
+ namespace tflite {
+ // MicroContext is eventually going to become the API between TFLM and the
+ // kernels, replacing all the functions in TfLiteContext. The end state is code
+@@ -158,4 +174,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+ 
+ }  // namespace tflite
+ 
++#endif  // NO_INTERPRETER
++
+ #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
+diff --git a/tensorflow/lite/micro/micro_interpreter.h b/tensorflow/lite/micro/micro_interpreter.h
+index ae7fc8f..5c2fd6e 100644
+--- a/tensorflow/lite/micro/micro_interpreter.h
++++ b/tensorflow/lite/micro/micro_interpreter.h
+@@ -140,6 +140,13 @@ class MicroInterpreter {
+   // arena_used_bytes() + 16.
+   size_t arena_used_bytes() const { return allocator_.used_bytes(); }
+ 
++  size_t operators_size() const { return model_->subgraphs()->Get(0)->operators()->size(); }
++
++  // For debugging only.
++  const NodeAndRegistration node_and_registration(int node_index)  {
++    return graph_.GetAllocations()[0].node_and_registrations[node_index];
++  }
++
+  protected:
+   const MicroAllocator& allocator() const { return allocator_; }
+   const TfLiteContext& context() const { return context_; }

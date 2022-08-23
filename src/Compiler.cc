@@ -1,19 +1,17 @@
-
 #include "Compiler.h"
 
-#include <memory>
 #include <fstream>
+#include <memory>
 #include <regex>
+#include <sstream>
 #include <vector>
 
 #include "CodeWriter.h"
 #include "CustomOperators.h"
-#include "RecordAllocations.h"
 #include "TypeToString.h"
-#include "tensorflow/lite/version.h"
 
 #ifndef SUFFICIENT_ARENA_SIZE
-#define SUFFICIENT_ARENA_SIZE (128*1024*1024)
+#define SUFFICIENT_ARENA_SIZE (128 * 1024 * 1024)
 #endif
 
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
@@ -21,6 +19,133 @@
 #error "ONLY TF_LITE_PACKED_QUANTIZED_DATA_VERSION Version 100 supported!"
 #endif
 #endif
+
+static std::vector<tflmc::Allocation> g_loggedAllocations;
+static int g_currentNodeIndex = -1;
+static uint8_t *g_arenaPtr = nullptr;
+static ptrdiff_t g_arena_size = 0;
+
+static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                             size_t bytes) {
+  void *ptr = tflite::GetMicroContext(ctx)->AllocatePersistentBuffer(bytes);
+  assert(ptr != nullptr && "Alloc failure");
+  g_loggedAllocations.push_back({-(g_arenaPtr - (uint8_t *)ptr + g_arena_size),
+                                 bytes, g_currentNodeIndex});
+  return ptr;
+}
+
+TfLiteStatus tflmc::AllocateTensors(
+    std::unique_ptr<tflite::MicroInterpreter> &interpreter) {
+  tflite::SubgraphAllocations *allocations =
+      interpreter->allocator_.StartModelAllocation(interpreter->model_);
+
+  if (allocations == nullptr) {
+    TF_LITE_REPORT_ERROR(interpreter->error_reporter_,
+                         "Failed starting model allocation.\n");
+    interpreter->initialization_status_ = kTfLiteError;
+    return kTfLiteError;
+  }
+
+  interpreter->graph_.SetSubgraphAllocations(allocations);
+
+  TF_LITE_ENSURE_STATUS(
+      interpreter->PrepareNodeAndRegistrationDataFromFlatbuffer());
+
+  // Only allow AllocatePersistentBuffer in Init stage.
+  interpreter->context_.AllocatePersistentBuffer =
+      &LoggingAllocatePersistentBuffer;
+  interpreter->context_.RequestScratchBufferInArena = nullptr;
+  interpreter->context_.GetScratchBuffer = nullptr;
+  interpreter->context_.GetExternalContext = nullptr;
+  TF_LITE_ENSURE_STATUS(interpreter->graph_.InitSubgraphs());
+
+  // Both AllocatePersistentBuffer and RequestScratchBufferInArena is
+  // available in Prepare stage.
+  interpreter->context_.RequestScratchBufferInArena =
+      tflite::MicroContextRequestScratchBufferInArena;
+  // external_context become available in Prepare stage.
+  interpreter->context_.GetExternalContext =
+      tflite::MicroContextGetExternalContext;
+
+  TF_LITE_ENSURE_STATUS(interpreter->graph_.PrepareSubgraphs());
+
+  // Prepare is done, we're ready for Invoke. Memory allocation is no longer
+  // allowed. Kernels can only fetch scratch buffers via GetScratchBuffer.
+  interpreter->context_.AllocatePersistentBuffer = nullptr;
+  interpreter->context_.RequestScratchBufferInArena = nullptr;
+  interpreter->context_.GetScratchBuffer = tflite::MicroContextGetScratchBuffer;
+
+  TF_LITE_ENSURE_OK(
+      &interpreter->context_,
+      interpreter->allocator_.FinishModelAllocation(
+          interpreter->model_, interpreter->graph_.GetAllocations(),
+          &interpreter->scratch_buffer_handles_));
+
+  interpreter->micro_context_.SetScratchBufferHandles(
+      interpreter->scratch_buffer_handles_);
+
+  // TODO(b/162311891): Drop these allocations when the interpreter supports
+  // handling buffers from TfLiteEvalTensor.
+  interpreter->input_tensors_ = reinterpret_cast<TfLiteTensor **>(
+      interpreter->allocator_.AllocatePersistentBuffer(
+          sizeof(TfLiteTensor *) * interpreter->inputs_size()));
+  if (interpreter->input_tensors_ == nullptr) {
+    TF_LITE_REPORT_ERROR(
+        interpreter->error_reporter_,
+        "Failed to allocate memory for context->input_tensors_, "
+        "%d bytes required",
+        sizeof(TfLiteTensor *) * interpreter->inputs_size());
+    return kTfLiteError;
+  }
+
+  for (size_t i = 0; i < interpreter->inputs_size(); ++i) {
+    interpreter->input_tensors_[i] =
+        interpreter->allocator_.AllocatePersistentTfLiteTensor(
+            interpreter->model_, interpreter->graph_.GetAllocations(),
+            interpreter->inputs().Get(i), 0);
+    if (interpreter->input_tensors_[i] == nullptr) {
+      TF_LITE_REPORT_ERROR(interpreter->error_reporter_,
+                           "Failed to initialize input tensor %d", i);
+      return kTfLiteError;
+    }
+  }
+
+  // TODO(b/162311891): Drop these allocations when the interpreter supports
+  // handling buffers from TfLiteEvalTensor.
+  interpreter->output_tensors_ = reinterpret_cast<TfLiteTensor **>(
+      interpreter->allocator_.AllocatePersistentBuffer(
+          sizeof(TfLiteTensor *) * interpreter->outputs_size()));
+  if (interpreter->output_tensors_ == nullptr) {
+    TF_LITE_REPORT_ERROR(
+        interpreter->error_reporter_,
+        "Failed to allocate memory for context->output_tensors_, "
+        "%d bytes required",
+        sizeof(TfLiteTensor *) * interpreter->outputs_size());
+    return kTfLiteError;
+  }
+
+  for (size_t i = 0; i < interpreter->outputs_size(); ++i) {
+    interpreter->output_tensors_[i] =
+        interpreter->allocator_.AllocatePersistentTfLiteTensor(
+            interpreter->model_, interpreter->graph_.GetAllocations(),
+            interpreter->outputs().Get(i), 0);
+    if (interpreter->output_tensors_[i] == nullptr) {
+      TF_LITE_REPORT_ERROR(interpreter->error_reporter_,
+                           "Failed to initialize output tensor %d", i);
+      return kTfLiteError;
+    }
+  }
+
+  TF_LITE_ENSURE_STATUS(interpreter->ResetVariableTensors());
+
+  interpreter->tensors_allocated_ = true;
+  return kTfLiteOk;
+}
+
+TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
+  auto ctx = &interpreter->context_;
+  return ctx->GetTensor(ctx, i);
+}
 
 bool tflmc::CompileFile(const std::string &modelFileName,
                         const std::string &outFileName,
@@ -108,13 +233,19 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
+
+  g_arena_size = SUFFICIENT_ARENA_SIZE;
+  std::vector<uint8_t> arena_buf(g_arena_size);
+  g_arenaPtr = arena_buf_.data();
+
   interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
-      new tflite::MicroInterpreter(
-        model_, resolver_, arena_buf_.data(), arena_buf_.size(),
-        &microErrReporter_));
+      new tflite::MicroInterpreter(model_, resolver_, arena_buf_.data(),
+                                   arena_buf_.size(), &microErrReporter_));
+
+  assert(interpreter_->graph_.NumSubgraphs() == 1);
 
   // Allocate memory from the tensor_arena for the model's tensors.
-  TfLiteStatus allocate_status = interpreter_->AllocateTensors();
+  TfLiteStatus allocate_status = AllocateTensors(interpreter_);
   if (allocate_status != kTfLiteOk) {
     errReporter().Report("AllocateTensors() failed");
     return false;
@@ -155,6 +286,21 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
   }
 
+  for (size_t k = 0; k < interpreter_->allocator_.scratch_buffer_request_count_;
+       k++) {
+    void *data = interpreter_->micro_context_.GetScratchBuffer(k);
+    ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
+    tflite::internal::ScratchBufferRequest *requests =
+        interpreter_->allocator_.GetScratchBufferRequests();
+    int bytes = requests[k].bytes;
+    ptrdiff_t highSize = offset + bytes;
+    ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
+    memMap_.recordRAM(offset, bytes,
+                      "Scratch_idx" + std::to_string((int)k) + "_op" +
+                          std::to_string((int)requests[k].node_idx));
+    scratchBufferOffsets.push_back(offset);
+  }
+
   for (size_t i = 0; i < interpreter_->operators_size(); i++) {
     auto nodeAndReg = interpreter_->node_and_registration(i);
     auto node = &nodeAndReg.node;
@@ -168,6 +314,9 @@ bool tflmc::Compiler::init(const void *modelData) {
     regInfo.code = code;
     if (code == tflite::BuiltinOperator_CUSTOM) {
       regInfo.custom_name = reg->custom_name;
+      if (regInfo.custom_name == "TFLite_Detection_PostProcess") {
+        has_tflite_custom_ops = true;
+      }
       has_custom_ops = true;
     }
     auto itOp =
@@ -180,13 +329,12 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
-  for (const auto &alloc : runtimeAllocations) {
+  for (const auto &alloc : g_loggedAllocations) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
   }
   size_t totalRuntimeAllocSize = 0;
-  for (const auto &alloc : runtimeAllocations) {
+  for (const auto &alloc : g_loggedAllocations) {
     // TODO: This drops the alignment between buffers. Is this fine?
     totalRuntimeAllocSize += alloc.len;
     ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
@@ -220,9 +368,15 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
   CodeWriter wr(out, subgraph_);
 
   wr << R"(
+
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
+#include "tensorflow/lite/micro/kernels/conv.h"
+#include "tensorflow/lite/micro/kernels/fully_connected.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+#include "tensorflow/lite/micro/kernels/reduce.h"
+#include "tensorflow/lite/micro/kernels/softmax.h"
+#include "tensorflow/lite/micro/micro_context.h"
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -240,14 +394,29 @@ namespace ops {
 namespace micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
-      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-        wr << "extern TfLiteRegistration Register_"
+      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
+          registrations_[i].custom_name != "TFLite_Detection_PostProcess") {
+        wr << "extern TfLiteRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
     wr << R"(}  // namespace micro
 }  // namespace ops
 }  // namespace tflite
+
+)";
+  }
+  if (has_tflite_custom_ops) {
+    wr << R"(namespace tflite {
+)";
+    for (size_t i = 0; i < registrations_.size(); i++) {
+      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
+          registrations_[i].custom_name == "TFLite_Detection_PostProcess") {
+        wr << "extern TfLiteRegistration "
+              "*Register_DETECTION_POSTPROCESS(void);\n";
+      }
+    }
+    wr << R"(} // namespace tflite
 
 )";
   }
@@ -316,7 +485,8 @@ TfLiteNode tflNodes[)"
     wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
     wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
-    wr.writeQuantizationDetails(t->quantization, "quant_details" + std::to_string(i));
+    wr.writeQuantizationDetails(t->quantization,
+                                "quant_details" + std::to_string(i));
 #endif
   }
   for (size_t i = 0; i < nodes_.size(); i++) {
@@ -409,6 +579,21 @@ TfLiteNode tflNodes[)"
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
   wr << R"(
+
+// Scratch buffer variables
+int scratch_buffer_idx = 0;
+const int scratch_buffer_offsets[)"
+     << scratchBufferOffsets.size() << R"(] = { )";
+  if (scratchBufferOffsets.size() > 0) {
+    wr << scratchBufferOffsets[0];
+    for (int i = 1; i < scratchBufferOffsets.size(); i++) {
+      wr << ", " << scratchBufferOffsets[i];
+    }
+  }
+  wr << R"( };
+tflite::MicroContext mc;
+
+// Functions to be used as function pointers for TfLiteContext and MicroContext
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
@@ -421,12 +606,51 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
                                        int tensor_idx) {
   return &evalTensors[tensor_idx];
 }
+
+static TfLiteStatus RequestScratchBufferInArena(struct TfLiteContext *context, size_t bytes,
+                                       int *buffer_idx) {
+  *buffer_idx = scratch_buffer_idx++;
+  return kTfLiteOk;
+};
+
+static void *GetScratchBuffer(struct TfLiteContext *context,
+                                       int buffer_idx) {
+  return tensor_arena + scratch_buffer_offsets[buffer_idx];
+}
+
+static TfLiteTensor* AllocateTempInputTensor(const TfLiteNode* node, int index) {
+      return &ctx.tensors[node->inputs->data[index]];
+}
+
+static TfLiteTensor* AllocateTempOutputTensor(const TfLiteNode* node, int index) {
+      return &ctx.tensors[node->outputs->data[index]];
+}
+
+static void DeallocateTempTfLiteTensor(TfLiteTensor* tensor) {
+}
+
+static void* external_context() {
+  return nullptr;
+}
+
 } // namespace
 
 TfLiteStatus )"
      << prefix_ << R"(init() {
+  // Setup microcontext functions
+  mc.AllocateTempInputTensor = &AllocateTempInputTensor;
+  mc.AllocateTempOutputTensor = &AllocateTempOutputTensor;
+  mc.DeallocateTempTfLiteTensor = &DeallocateTempTfLiteTensor;
+  mc.external_context = &external_context;
+
+  // Setup tflitecontext functions
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
   ctx.GetEvalTensor = &GetEvalTensor;
+  ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
+  ctx.GetScratchBuffer = &GetScratchBuffer;
+
+  // Set microcontext as the context ptr
+  ctx.impl_ = (void*)&mc;
   ctx.tensors = tflTensors;
 )";
   wr << "  ctx.tensors_size = " << tensors_.size() << ";\n";
@@ -474,11 +698,39 @@ TfLiteStatus )"
     std::string opName;
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
+      if (opName == "TFLite_Detection_PostProcess") {
+        wr << "  registrations[OP_" << opName
+           << "] = *(tflite::Register_DETECTION_POSTPROCESS());\n";
+      }
+    } else if ((registrations_[i].code == tflite::BuiltinOperator_ADD) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_AVERAGE_POOL_2D) ||
+               (registrations_[i].code == tflite::BuiltinOperator_CONV_2D) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_DEPTHWISE_CONV_2D) ||
+               (registrations_[i].code == tflite::BuiltinOperator_DEQUANTIZE) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_FULLY_CONNECTED) ||
+               (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_MAX_POOL_2D) ||
+               (registrations_[i].code == tflite::BuiltinOperator_MEAN) ||
+               (registrations_[i].code == tflite::BuiltinOperator_MUL) ||
+               (registrations_[i].code == tflite::BuiltinOperator_PRELU) ||
+               (registrations_[i].code == tflite::BuiltinOperator_QUANTIZE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_RELU) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SHAPE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SOFTMAX) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_TRANSPOSE_CONV)) {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
+         << "();\n";
     } else {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName
+         << "] = tflite::ops::micro::Register_" << opName << "();\n";
     }
-    wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"
-       << opName << "();\n";
   }
   wr << "\n";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {

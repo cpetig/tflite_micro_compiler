@@ -8,7 +8,6 @@ jobs:
       matrix:
         config:
           - {name: "Linux", os: ubuntu-latest, cmake-generator: ""}
-          - {name: "Windows", os: windows-latest, cmake-generator: "-G \"MinGW Makefiles\""}
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.name }}
 
@@ -17,10 +16,15 @@ jobs:
     - name: Requirements
       shell: bash
       run: |
+        pip install pillow
         cd ..
-        git clone https://github.com/tensorflow/tensorflow.git
+        git clone https://github.com/tensorflow/tflite-micro.git tensorflow
         cd tensorflow
-        make -f tensorflow/lite/micro/tools/make/Makefile hello_world
+        git checkout f474248365ad48654ba8a27ac5bf49a6afbb80e7
+        git apply ../tflite_micro_compiler/patches/tflite-micro.patch
+        git apply ../tflite_micro_compiler/patches/tflite-micro-makefile.patch
+        make -Bf tensorflow/lite/micro/tools/make/Makefile NO_INTERPRETER=TRUE microlite -j2
+        make -Bf tensorflow/lite/micro/tools/make/Makefile microlite -j2
     - name: Requirements (Windows)
       if: matrix.config.os == 'windows-latest'
       run: |

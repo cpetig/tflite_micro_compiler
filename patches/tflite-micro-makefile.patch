@@ -1,0 +1,57 @@
+diff --git a/tensorflow/lite/micro/tools/make/Makefile b/tensorflow/lite/micro/tools/make/Makefile
+index e25b3bc..09ce481 100644
+--- a/tensorflow/lite/micro/tools/make/Makefile
++++ b/tensorflow/lite/micro/tools/make/Makefile
+@@ -150,6 +150,10 @@ COMMON_FLAGS := \
+   $(CC_WARNINGS) \
+   $(ADDITIONAL_DEFINES)
+ 
++ifeq ($(NO_INTERPRETER),TRUE)
++  COMMON_FLAGS += -DNO_INTERPRETER
++endif
++
+ ifeq ($(TARGET), $(HOST_OS))
+   # If we are not doing a cross-compilation then -DTF_LITE_USE_CTIME is what we
+   # want to have by default.
+@@ -233,7 +237,11 @@ endif
+ 
+ # This library is the main target for this makefile. It will contain a minimal
+ # runtime that can be linked in to other programs.
+-MICROLITE_LIB_NAME := libtensorflow-microlite.a
++ifeq ($(NO_INTERPRETER),TRUE)
++  MICROLITE_LIB_NAME := libtensorflow-microlite-no-interpreter.a
++else
++  MICROLITE_LIB_NAME := libtensorflow-microlite.a
++endif
+ 
+ # Where compiled objects are stored.
+ GENDIR := $(MAKEFILE_DIR)/gen/$(TARGET)_$(TARGET_ARCH)_$(BUILD_TYPE)/
+@@ -469,6 +477,28 @@ THIRD_PARTY_KERNEL_CC_SRCS :=
+ # Load custom kernels.
+ include $(MAKEFILE_DIR)/additional_kernels.inc
+ 
++ifeq ($(NO_INTERPRETER),TRUE)
++  MICRO_LITE_NO_INTERPRETER_SRCS := \
++  tensorflow/lite/micro/fake_micro_context.cc \
++  tensorflow/lite/micro/micro_context.cc \
++  tensorflow/lite/micro/micro_allocator.cc \
++  tensorflow/lite/micro/micro_graph.cc \
++  tensorflow/lite/micro/micro_interpreter.cc
++
++  MICRO_LITE_UNSUPPORTED_KERNELS_SRCS := \
++  tensorflow/lite/micro/kernels/assign_variable.cc \
++  tensorflow/lite/micro/kernels/call_once.cc \
++  tensorflow/lite/micro/kernels/if.cc \
++  tensorflow/lite/micro/kernels/kernel_runner.cc \
++  tensorflow/lite/micro/kernels/read_variable.cc \
++  tensorflow/lite/micro/kernels/unidirectional_sequence_lstm.cc \
++  tensorflow/lite/micro/kernels/while.cc \
++  tensorflow/lite/micro/kernels/var_handle.cc
++
++  MICROLITE_CC_KERNEL_SRCS := $(filter-out $(MICRO_LITE_UNSUPPORTED_KERNELS_SRCS), $(MICROLITE_CC_KERNEL_SRCS))
++  MICROLITE_CC_BASE_SRCS := $(filter-out $(MICRO_LITE_NO_INTERPRETER_SRCS), $(MICROLITE_CC_BASE_SRCS))
++endif
++
+ MICROLITE_CC_SRCS := $(filter-out $(MICROLITE_TEST_SRCS), $(MICROLITE_CC_BASE_SRCS))
+ MICROLITE_CC_SRCS := $(filter-out $(MICROLITE_BENCHMARK_SRCS), $(MICROLITE_CC_SRCS))
+ 
