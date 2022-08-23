@@ -23,8 +23,8 @@ jobs:
         git checkout f474248365ad48654ba8a27ac5bf49a6afbb80e7
         git apply ../tflite_micro_compiler/patches/tflite-micro.patch
         git apply ../tflite_micro_compiler/patches/tflite-micro-makefile.patch
-        make -Bf tensorflow/lite/micro/tools/make/Makefile NO_INTERPRETER=TRUE microlite
-        make -Bf tensorflow/lite/micro/tools/make/Makefile microlite
+        make -Bf tensorflow/lite/micro/tools/make/Makefile NO_INTERPRETER=TRUE microlite -j2
+        make -Bf tensorflow/lite/micro/tools/make/Makefile microlite -j2
     - name: Requirements (Windows)
       if: matrix.config.os == 'windows-latest'
       run: |

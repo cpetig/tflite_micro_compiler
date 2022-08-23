@@ -19,9 +19,9 @@ TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC
 )
 
 IF(WIN32)
-    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/windows_x86_64/lib)
+    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/windows_x86_64_default/lib)
 ELSE()
-    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/linux_x86_64/lib)
+    TARGET_LINK_DIRECTORIES(${PROJECT_NAME} PUBLIC ${TFLM_SRC}/tools/make/gen/linux_x86_64_default/lib)
 ENDIF()
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC tensorflow-microlite-no-interpreter)
 
