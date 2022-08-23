@@ -8,7 +8,6 @@ jobs:
       matrix:
         config:
           - {name: "Linux", os: ubuntu-latest, cmake-generator: ""}
-          - {name: "Windows", os: windows-latest, cmake-generator: "-G \"MinGW Makefiles\""}
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.name }}
 
