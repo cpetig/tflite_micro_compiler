@@ -437,10 +437,20 @@ TfLiteStatus )"
     tflNodes[i].inputs = nodeData[i].inputs;
     tflNodes[i].outputs = nodeData[i].outputs;
     tflNodes[i].builtin_data = nodeData[i].builtin_data;
-    tflNodes[i].custom_initial_data = nullptr;
-    tflNodes[i].custom_initial_data_size = 0;
-    if (registrations[nodeData[i].used_op_index]->init) {
-      tflNodes[i].user_data = registrations[nodeData[i].used_op_index]->init(&ctx, (const char*)tflNodes[i].builtin_data, )";
+)";
+  // from micro_allocator.cc : PrepareNodeAndRegistrationDataFromFlatbuffer(), if custom op, then builtin_data stays void
+  // hence, we just use the builtin_data pointer to store the custom data
+  if (has_custom_ops) {
+    wr <<  R"(tflNodes[i].custom_initial_data = nodeData[i].builtin_data;
+      tflNodes[i].custom_initial_data_size = nodeData[i].custom_initial_data_size;
+)";
+  } else {
+    wr <<  R"(tflNodes[i].custom_initial_data = nullptr;
+      tflNodes[i].custom_initial_data_size = 0;
+)";
+  }
+  wr <<  R"(if (registrations[nodeData[i].used_op_index].init) {
+      tflNodes[i].user_data = registrations[nodeData[i].used_op_index].init(&ctx, (const char*)tflNodes[i].builtin_data,)";
   if (has_custom_ops) {
     wr << "nodeData[i].custom_initial_data_size";
   } else {
